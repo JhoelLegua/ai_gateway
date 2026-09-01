@@ -80,6 +80,54 @@ def verify_client_token(
     return raw_token
 
 
+def verify_admin_token(
+    credentials: HTTPAuthorizationCredentials = Security(_bearer_scheme),
+    settings: Settings = Depends(get_settings),
+) -> str:
+    """
+    FastAPI dependency that validates the admin Bearer token.
+
+    Used to protect SOC / audit management endpoints:
+        - /v1/notifications/recipients
+        - /v1/audit/*
+        - /v1/gateway/reset-vault
+
+    Validation is performed using constant-time SHA-256 comparison to prevent
+    timing-based side-channel attacks. Admin tokens are stored only as hashes
+    in ALLOWED_ADMIN_API_KEYS_HASHES.
+
+    Args:
+        credentials: Extracted Bearer token from the Authorization header.
+        settings: Application settings injected by FastAPI.
+
+    Returns:
+        The raw token string if authentication succeeds.
+
+    Raises:
+        HTTPException(401): When the token is missing or malformed.
+        HTTPException(403): When the token is valid but lacks admin privileges.
+    """
+    if not settings.gateway_auth_required:
+        return credentials.credentials
+
+    raw_token = credentials.credentials
+    incoming_hash = hash_token(raw_token)
+
+    is_valid = any(
+        secrets.compare_digest(incoming_hash, approved_hash)
+        for approved_hash in settings.allowed_admin_hashes_set
+    )
+
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required. Invalid or unauthorized admin token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return raw_token
+
+
 def generate_canary_token(settings: Settings) -> str:
     """
     Generates a cryptographically secure canary token for a single request.

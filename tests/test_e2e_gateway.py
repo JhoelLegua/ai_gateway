@@ -35,32 +35,7 @@ def _get_base_payload(message: str, bypass: bool = False) -> dict:
 
 # ---------------------------------------------------------------------------
 # Fixtures
-# ---------------------------------------------------------------------------
-
-@pytest.fixture(scope="module")
-def client():
-    """
-    Creates a TestClient with mocked external dependencies.
-
-    The VectorDBService and LLMClientService are patched to avoid
-    real disk I/O and network calls during testing.
-    """
-    with (
-        patch("app.services.vector_db.VectorDBService.initialize"),
-        patch("app.services.vector_db.VectorDBService.search_similar_attack",
-              return_value=(False, 0.9, "irrelevant text")),
-        patch("app.services.vector_db.VectorDBService.get_signature_count",
-              return_value=20),
-        patch("app.core.pipeline.layer_3_intelligence.load_model"),
-        patch("app.services.llm_client.LLMClientService.initialize"),
-        patch(
-            "app.services.llm_client.LLMClientService.complete",
-            new_callable=AsyncMock,
-            return_value="Your account balance is displayed in the Accounts section.",
-        ),
-    ):
-        with TestClient(app) as c:
-            yield c
+# Fixture provided by tests/conftest.py
 
 
 # ---------------------------------------------------------------------------

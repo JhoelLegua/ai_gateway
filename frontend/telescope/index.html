@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI Gateway Telescope — Monitor de rendimiento y stress-lab visual para el gateway de seguridad LLM." />
+  <title>Telescope | AI Gateway</title>
+  <link rel="stylesheet" href="telescope.css" />
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-brand">
+    <div class="logo-box">
+      <svg class="header-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+        <path d="M2 12h20"></path>
+      </svg>
+    </div>
+    <div>
+      <h1 data-i18n="title">AI Gateway Telescope</h1>
+      <div class="subtitle" data-i18n="subtitle">Monitor de Rendimiento &amp; Stress Lab</div>
+    </div>
+  </div>
+
+  <div class="header-controls">
+    <span class="uptime-chip" id="uptime-chip">00:00:00</span>
+
+    <div class="live-badge">
+      <div class="live-dot" id="live-dot"></div>
+      <span id="live-label" data-i18n="live">EN VIVO</span>
+    </div>
+
+    <button class="btn-ctrl" id="btn-live" title="Pausar / Reanudar">
+      <svg class="icon-svg" id="icon-live" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="4" width="4" height="16"></rect>
+        <rect x="14" y="4" width="4" height="16"></rect>
+      </svg>
+    </button>
+    <button class="btn-ctrl" id="btn-bw">
+      <svg class="icon-svg" id="icon-theme" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+      <span id="label-theme" data-i18n="bwMode">Claro</span>
+    </button>
+    <button class="btn-ctrl" id="btn-lang">
+      <svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="2" y1="12" x2="22" y2="12"></line>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      </svg>
+      <span id="label-lang" data-i18n="lang">EN</span>
+    </button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- ── Pipeline Flow ──────────────────────────────────── -->
+  <section class="pipeline-section">
+
+    <!-- Input Monitor -->
+    <div class="monitor-panel">
+      <div class="panel-label" data-i18n="inputMonitor">MONITOR ENTRADA</div>
+      <div class="monitor-screen" id="input-monitor-content">
+        <div style="color:var(--text-muted);font-size:11px">Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Pipeline Canvas -->
+    <div class="pipeline-canvas-wrap">
+      <div class="panel-label" data-i18n="pipelineLabel">PIPELINE DE SEGURIDAD — 5 CAPAS</div>
+      <svg id="pipeline-svg" role="img" aria-label="Pipeline de seguridad de 5 capas"></svg>
+    </div>
+
+    <!-- Output Monitor -->
+    <div class="monitor-panel">
+      <div class="panel-label" data-i18n="outputMonitor">MONITOR SALIDA</div>
+      <div class="monitor-screen" id="output-monitor-content">
+        <div style="color:var(--text-muted);font-size:11px">Cargando…</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── KPI Cards ────────────────────────────────────────── -->
+  <div class="kpi-row">
+    <div class="kpi-card blue">
+      <div class="kpi-label" data-i18n="totalReq">Total Requests</div>
+      <div class="kpi-value" id="kpi-total">0</div>
+      <div class="kpi-sub">since startup</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label" data-i18n="cleanPassed">Clean Passed</div>
+      <div class="kpi-value" id="kpi-clean">0</div>
+      <div class="kpi-sub">allowed through</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label" data-i18n="blocked">Bloqueados</div>
+      <div class="kpi-value" id="kpi-blocked">0</div>
+      <div class="kpi-sub">threats intercepted</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label" data-i18n="http200">HTTP 200</div>
+      <div class="kpi-value" id="kpi-200">0</div>
+      <div class="kpi-sub">success responses</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label" data-i18n="http400">HTTP 400</div>
+      <div class="kpi-value" id="kpi-400">0</div>
+      <div class="kpi-sub">blocked at ingress</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label" data-i18n="http500">HTTP 500</div>
+      <div class="kpi-value" id="kpi-500">0</div>
+      <div class="kpi-sub">egress anomalies</div>
+    </div>
+    <div class="kpi-card cyan">
+      <div class="kpi-label" data-i18n="uptime">Uptime</div>
+      <div class="kpi-value" id="kpi-uptime" style="font-size:20px">00:00:00</div>
+      <div class="kpi-sub">hh:mm:ss</div>
+    </div>
+  </div>
+
+  <!-- ── Latency Table + HTTP Donut ───────────────────────── -->
+  <div class="two-col">
+
+    <!-- Latency Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg class="card-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span data-i18n="latencyTable">Latencia por Capa</span>
+        </div>
+      </div>
+      <table class="latency-table" id="latency-table">
+        <thead>
+          <tr>
+            <th data-i18n="layer">Capa</th>
+            <th data-i18n="invocations">Inv.</th>
+            <th data-i18n="p50">P50</th>
+            <th data-i18n="p95">P95</th>
+            <th data-i18n="max">Máx</th>
+            <th data-i18n="avg">Prom</th>
+            <th data-i18n="blockedCol">Bloq.</th>
+          </tr>
+        </thead>
+        <tbody id="latency-tbody">
+          <tr><td colspan="7" style="padding:16px;color:var(--text-muted);text-align:center;font-size:11px" data-i18n="noData">Sin datos aún…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- HTTP Donut -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg class="card-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+            <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+          </svg>
+          <span data-i18n="httpStatus">Distribución HTTP</span>
+        </div>
+      </div>
+      <div class="status-chart-wrap">
+        <canvas id="status-canvas" width="180" height="180"></canvas>
+        <div class="status-legend" id="status-legend"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Stress Lab ───────────────────────────────────────── -->
+  <div class="section-title">
+    <svg class="card-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 2v7.31L4.2 18.06A2 2 0 0 0 5.86 21h12.28a2 2 0 0 0 1.66-2.94L14 9.31V2"></path>
+      <line x1="8.5" y1="2" x2="15.5" y2="2"></line>
+      <line x1="7" y1="14" x2="17" y2="14"></line>
+    </svg>
+    <span data-i18n="stressLab">Stress Lab</span>
+  </div>
+
+  <div class="card">
+    <div class="stress-grid">
+
+      <!-- Controls -->
+      <div class="stress-controls">
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="slider-name" data-i18n="users">Usuarios Concurrentes</span>
+            <span class="slider-value" id="val-users">10</span>
+          </div>
+          <input type="range" id="slider-users" min="1" max="50" value="10" step="1" />
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="slider-name" data-i18n="interval">Intervalo (ms)</span>
+            <span class="slider-value" id="val-interval">500ms</span>
+          </div>
+          <input type="range" id="slider-interval" min="100" max="5000" value="500" step="100" />
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="slider-name" data-i18n="iterations">Iteraciones</span>
+            <span class="slider-value" id="val-iterations">20</span>
+          </div>
+          <input type="range" id="slider-iterations" min="1" max="200" value="20" step="1" />
+        </div>
+
+        <!-- Traffic Mix -->
+        <div class="mix-sliders">
+          <div class="slider-label">
+            <span class="slider-name" data-i18n="cleanTraffic">Tráfico Limpio</span>
+            <span class="slider-value" id="val-mix-clean">70%</span>
+          </div>
+          <input type="range" id="slider-mix-clean" min="0" max="100" value="70" step="5" />
+
+          <div class="mix-bar" id="mix-bar">
+            <div class="mix-bar-clean" id="mix-bar-clean" style="width:70%"></div>
+            <div class="mix-bar-inject" id="mix-bar-inject" style="width:30%"></div>
+          </div>
+
+          <div class="slider-label" style="margin-top:4px">
+            <span class="slider-name" data-i18n="injectionTraffic">Inyecciones</span>
+            <span class="slider-value" id="val-mix-inject">30%</span>
+          </div>
+        </div>
+
+        <div class="stress-actions">
+          <button class="btn-fire" id="btn-fire">
+            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span id="btn-fire-text" data-i18n="fireBtn">LANZAR STRESS TEST</span>
+          </button>
+          <button class="btn-stop" id="btn-stop" style="display:none">
+            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            </svg>
+            <span id="btn-stop-text" data-i18n="stopBtn">Detener</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Results -->
+      <div class="stress-results">
+
+        <div class="progress-wrap">
+          <div class="progress-info">
+            <span data-i18n="progressLabel">Progreso</span>
+            <span>
+              <span id="stress-count">0 / 0</span> &nbsp;
+              <strong id="stress-pct">0%</strong>
+            </span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="stress-progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="result-counters">
+          <div class="result-counter">
+            <div class="rc-val green" id="rc-success">0</div>
+            <div class="rc-label" data-i18n="success">Éxito</div>
+          </div>
+          <div class="result-counter">
+            <div class="rc-val red" id="rc-blocked">0</div>
+            <div class="rc-label" data-i18n="blockedRes">Bloqueadas</div>
+          </div>
+          <div class="result-counter">
+            <div class="rc-val yellow" id="rc-errors">0</div>
+            <div class="rc-label" data-i18n="errors">Errores</div>
+          </div>
+          <div class="result-counter">
+            <div class="rc-val blue" id="rc-avgms">0</div>
+            <div class="rc-label" data-i18n="avgMs">Prom ms</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Request Log ──────────────────────────────────────── -->
+  <div class="section-title">
+    <svg class="card-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="4 17 10 11 4 5"></polyline>
+      <line x1="12" y1="19" x2="20" y2="19"></line>
+    </svg>
+    <span data-i18n="requestLog">Log de Requests</span>
+  </div>
+
+  <div class="card">
+    <div class="log-wrap">
+      <div class="log-header">
+        <span data-i18n="logTs">Timestamp</span>
+        <span data-i18n="logUser">Usuario</span>
+        <span data-i18n="logStatus">Status</span>
+        <span data-i18n="logMs">ms</span>
+        <span data-i18n="logLayer">Capa bloqueada</span>
+      </div>
+      <div id="log-body">
+        <div style="padding:16px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px" data-i18n="noData">Sin datos aún…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Export ───────────────────────────────────────────── -->
+  <div class="export-row">
+    <button class="btn-export" id="btn-export-csv">
+      <svg class="card-icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+      <span data-i18n="exportCsvBtn">Exportar CSV</span>
+    </button>
+    <button class="btn-export" id="btn-export-json">
+      <svg class="card-icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      <span data-i18n="exportBtn">Exportar Reporte (JSON)</span>
+    </button>
+  </div>
+
+</main>
+
+<script src="telescope.js"></script>
+</body>
+</html>

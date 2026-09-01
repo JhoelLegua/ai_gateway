@@ -167,20 +167,42 @@ class BlockedResponse(BaseModel):
         default_factory=list,
         description="Per-layer metrics up to the point of the block.",
     )
+    total_latency_ms: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Total processing time in milliseconds up to block.",
+        examples=[18.5],
+    )
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
 class EgressBlockedResponse(BaseModel):
-    """Response returned when the egress scanner intercepts an anomalous LLM output."""
+    """Response returned when Layer 5 detects context or canary leakage."""
 
     status: RequestStatus = Field(default=RequestStatus.EGRESS_BLOCKED)
-    layer: str = Field(default="layer_5_egress")
+    layer: str = Field(
+        default="layer_5_egress",
+        description="Always layer_5_egress for egress anomalies.",
+    )
     reason: str = Field(
         ...,
-        description="Description of the egress anomaly detected.",
+        description="Description of the egress policy violation.",
         examples=["Canary token leakage detected in LLM response."],
     )
-    telemetry: list[LayerTelemetry] = Field(default_factory=list)
+    detail: str | None = Field(
+        default=None,
+        description="Additional technical details for SOC operators.",
+    )
+    telemetry: list[LayerTelemetry] = Field(
+        default_factory=list,
+        description="Complete pipeline telemetry.",
+    )
+    total_latency_ms: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Total processing time in milliseconds.",
+        examples=[210.0],
+    )
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 

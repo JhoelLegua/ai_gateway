@@ -1,90 +1,131 @@
 # AI Gateway Perimetral
 
-A perimeter security proxy for LLM-based applications built as a thesis-grade
-engineering project. Intercepts, inspects, and sanitizes user prompts through
-a 5-layer security pipeline before they reach the backend LLM, and audits
-responses before delivery to the client.
+[![Language: English](https://img.shields.io/badge/Language-English-blue.svg)](README.md)
+[![Idioma: Español](https://img.shields.io/badge/Idioma-Español-gray.svg)](README_es.md)
+
+A production-grade, perimeter security proxy for LLM-based applications engineered as a thesis-level defense system. Intercepts, inspects, and sanitizes incoming user prompts through a **5-layer security pipeline** before they reach the backend LLM, audits outgoing model responses to prevent data leakage, persists audit trails for Human-in-the-Loop (HITL) analysis, dispatches real-time incident alerts via Brevo SMTP, and includes **Telescope & Stress-Lab**: a real-time observability dashboard and load testing suite.
 
 ---
 
 ## Architecture Overview
 
 ```
-Client / Frontend
-      |
-      | Authorization: Bearer <token>
-      v
-[AI Gateway Perimetral - FastAPI]
-      |
-      |-- Layer 1: Heuristic Filter      (regex / banned substrings)  < 1ms
-      |-- Layer 2: Vector Similarity     (ChromaDB cosine search)     5-20ms
-      |-- Layer 3: AI Classifier         (Transformer ONNX on CPU)    25-60ms
-      |-- Layer 4: Canary Injection      (cryptographic token embed)  < 1ms
-      |
-      v
-[Groq Cloud LLM - llama-3.3-70b-versatile]
-      |
-      v
-      |-- Layer 5: Egress Scanner        (canary + leak detection)    < 2ms
-      |
-      v
-Client Response (HTTP 200 / 400 / 500) + Telemetry
+                        [ Client / Web Frontend / API Consumers ]
+                                           |
+                                           | Authorization: Bearer <TOKEN>
+                                           v
++---------------------------------------------------------------------------------------+
+|                                AI GATEWAY PERIMETRAL                                  |
+|                                                                                       |
+|   [ Ingress Pipeline ]                                                                |
+|   |-- Layer 1: Heuristic Filter      (regex / banned substrings)          < 1ms       |
+|   |-- Layer 2: Vector Similarity     (ChromaDB cosine search)             5-20ms      |
+|   |-- Layer 3: AI Classifier         (DeBERTa-v3 on CPU / Prompt Guard)   25-60ms     |
+|   |-- Layer 4: Canary Injection      (high-entropy token embed in prompt) < 1ms       |
+|                                                                                       |
+|   [ Forwarding Engine ]                                                               |
+|   +---> [Groq Cloud LLM Backend] (qwen/qwen3.8-27b / llama-3.3-70b)                   |
+|                                                                                       |
+|   [ Egress Pipeline ]                                                                 |
+|   |-- Layer 5: Egress Scanner        (canary leak & system prompt audit)  < 2ms       |
+|                                                                                       |
+|   [ Observability & Intelligence ]                                                    |
+|   |-- Immunity Feedback Loop         (Auto-learns new attack signatures in ChromaDB)  |
+|   |-- Telescope Metrics Collector    (Rolling P50, P95, Max latencies & HTTP codes)   |
+|   |-- PostgreSQL Audit Logs          (Full prompt history for HITL review)            |
+|   |-- Brevo SMTP Alerts              (Instant incident notification to SOC team)      |
++---------------------------------------------------------------------------------------+
+                                           |
+                                           v
+                 Client Response (HTTP 200 / 400 / 500) + Complete Telemetry
 ```
+
+---
+
+## Key Features
+
+- **5-Layer Security Pipeline**: Heuristics, Vector Embeddings (ChromaDB), Deep Learning Intent Classifier (DeBERTa-v3), Cryptographic Canary Injection, and Egress Verification.
+- **Immunity Feedback Loop**: When Layers 3 or 5 block a zero-day prompt injection, the attack vector is automatically vectorized and registered in ChromaDB on disk, allowing Layer 2 to block subsequent identical or semantically similar attacks in < 20ms without invoking the heavier neural model.
+- **Telescope & Stress-Lab**:
+  - Live animated SVG packet pipeline flow (Monitor Ingress -> Gateway Pipeline -> Monitor Egress).
+  - Percentile latency table by layer (P50, P95, Max, Average).
+  - HTTP status breakdown donut chart (200 OK, 400 Ingress Blocked, 500 Egress Blocked).
+  - Configurable Stress Testing Lab (virtual users, intervals, loops, clean/attack traffic ratio).
+  - One-click export of benchmarking telemetry in JSON and CSV.
+- **Human-in-the-Loop (HITL) Audit Table**: All intercepted prompts and confidence scores are stored in PostgreSQL (`prompt_audit_dataset`) for security analyst triage and dataset curation.
+- **Dynamic SOC Alerting**: Automated email dispatch with security alerts via Brevo SMTP to active personnel configured in PostgreSQL (`users_notification`).
+- **Modern Zero-Scroll Web UI**: Responsive 100vh dashboard with light/dark themes, multilingual support (ES/EN), attack playground presets, and real-time layer telemetry visualization.
+
+---
+
+## Access Points
+
+| URL | Description |
+|---|---|
+| `http://localhost:8000/app/` | Main chat interface with live security inspector & attack playground |
+| `http://localhost:8000/telescope` | Telescope real-time observability dashboard & stress testing lab |
+| `http://localhost:8000/docs` | Scalar interactive API documentation & testing console |
+| `http://localhost:8000/v1/gateway/health` | Public health, ChromaDB state, and system metrics endpoint |
 
 ---
 
 ## Prerequisites
 
-- Python 3.10 or higher
-- A free [Groq Cloud](https://console.groq.com) account and API key
-- (Optional) A [Brevo](https://app.brevo.com) account for SMTP email alerts
+- **Python 3.10** or higher
+- **PostgreSQL 14+** database instance
+- Free **[Groq Cloud](https://console.groq.com)** API key
+- (Optional) Free **[Brevo](https://app.brevo.com)** account for SMTP email incident alerts
 
 ---
 
 ## Quick Start
 
-### 1. Activate the virtual environment
+### Option A: Automated Setup (Recommended)
 
-```powershell
-# Windows
-.venv\Scripts\Activate.ps1
+Run the setup script using **Git Bash** (Windows) or **Linux/macOS terminal**:
+
+```bash
+bash setup.sh
+```
+
+### Option B: Manual Setup
+
+#### 1. Create and activate the virtual environment
+
+```bash
+# Windows PowerShell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 
 # Linux / macOS
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 2. Install dependencies
+#### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> Note: The first run will download the embedding model (`all-MiniLM-L6-v2`)
-> and the Prompt Guard classifier (~270MB total) to `./models_cache`.
-> Ensure you have at least 2GB of free RAM available.
-
-### 3. Configure environment variables
+#### 3. Configure environment variables
 
 ```bash
-copy .env.example .env
+cp .env.example .env
 ```
 
-Open `.env` and set your Groq API key:
+Edit `.env` with your credentials:
 
-```bash
-BACKEND_API_KEY="gsk_your_key_here"
-```
-
-To enable email alerts, also configure:
-
-```bash
+```ini
+BACKEND_API_KEY="gsk_your_groq_api_key"
+DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5432/ai_gateway"
 SMTP_ENABLED=True
-SMTP_USER="your_brevo_email@example.com"
-SMTP_PASSWORD="your_brevo_smtp_key"
-ALERT_RECIPIENT_EMAIL="your_inbox@example.com"
+SMTP_USER="your-smtp-user@smtp-brevo.com"
+SMTP_PASSWORD="your-brevo-key"
+ALERT_SENDER_EMAIL="security@yourcompany.com"
 ```
 
-### 4. Run the gateway
+#### 4. Run the Gateway
 
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -92,90 +133,83 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-## Access Points
+## Role-Based Access Control (RBAC)
 
-| URL | Description |
-|-----|-------------|
-| `http://localhost:8000/app` | Frontend chat interface with live security inspector |
-| `http://localhost:8000/docs` | Scalar interactive API documentation |
-| `http://localhost:8000/v1/gateway/health` | Health and statistics endpoint |
+The gateway enforces **Bearer Token Authentication** using SHA-256 hex digests defined in `.env`:
+
+| Token Role | Environment Variable | Default Dev Token | Allowed Endpoints |
+|---|---|---|---|
+| **Client Token** | `ALLOWED_CLIENT_API_KEYS_HASHES` | `test` | `POST /v1/gateway/chat`, `POST /v1/telescope/stress/run` |
+| **Admin Token** | `ALLOWED_ADMIN_API_KEYS_HASHES` | `admin123` | `/v1/notifications/*`, `/v1/audit/*`, `/v1/gateway/reset-vault` |
 
 ---
 
-## API Endpoints
+## API Reference
 
-### POST /v1/gateway/chat
+### 1. Perimeter Chat Proxy
 
-The primary gateway endpoint. Requires a valid `Authorization: Bearer <token>` header.
-
-**Request:**
+#### `POST /v1/gateway/chat`
+* **Auth:** `Authorization: Bearer <CLIENT_TOKEN>`
+* **Request Body:**
 ```json
 {
   "user_id": "usr_001",
   "session_id": "ses_001",
-  "message": "What is my account balance?",
+  "message": "¿Cuál es el saldo actual de mi cuenta bancaria?",
   "bypass_gateway": false
 }
 ```
-
-**Responses:**
-- `200 OK` - Request passed all layers, LLM response returned with telemetry.
-- `400 Bad Request` - Request blocked at ingress (Layers 1, 2, or 3).
-- `401 Unauthorized` - Invalid or missing Bearer token.
-- `500 Internal Server Error` - Egress anomaly detected (Layer 5).
-
-### GET /v1/gateway/health
-
-Returns operational metrics, per-layer statistics, ChromaDB state, and model status.
-
-### POST /v1/gateway/reset-vault
-
-Clears all learned attack signatures from ChromaDB and reloads the seed dataset.
-Requires a valid Bearer token.
+* **Responses:**
+  - `200 OK`: Request passed all layers. Returns sanitized LLM response + telemetry.
+  - `400 Bad Request`: Blocked at Ingress (Layers 1, 2, or 3). Returns blocked layer + telemetry.
+  - `401 Unauthorized`: Missing or invalid client token.
+  - `500 Internal Server Error`: Egress violation (Layer 5).
 
 ---
 
-## Authentication
+### 2. Telescope Observability & Stress-Lab
 
-The gateway uses Bearer token authentication. Client tokens are never stored
-in plaintext. Only their SHA-256 hex digests are stored in `ALLOWED_CLIENT_API_KEYS_HASHES`.
-
-To generate the hash for a new token:
-
-```python
-import hashlib
-raw_token = "your_raw_token_here"
-print(hashlib.sha256(raw_token.encode()).hexdigest())
-```
-
-The default development token is `test` (hash pre-configured in `.env.example`).
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/v1/telescope/metrics` | Public | Returns real-time rolling metrics, P50/P95/Max latencies by layer, and HTTP counts. |
+| `GET` | `/v1/telescope/history` | Public | Returns rolling log of recent request events for the visual pipeline. |
+| `POST` | `/v1/telescope/stress/run` | Client | Launches an asynchronous stress benchmark (users, delay, iterations, mix ratio). |
+| `POST` | `/v1/telescope/stress/stop` | Client | Stops any currently running stress test. |
+| `GET` | `/v1/telescope/stress/status` | Public | Returns live progress, success count, error count, and throughput. |
 
 ---
 
-## Security Pipeline Details
+### 3. Incident Notifications & SOC Recipients (Admin)
 
-| Layer | Name | Mechanism | Latency | On Block |
-|-------|------|-----------|---------|----------|
-| 1 | Heuristic Filter | Regex + banned substrings | < 1ms | HTTP 400 |
-| 2 | Vector Similarity | ChromaDB cosine distance | 5-20ms | HTTP 400 |
-| 3 | AI Classifier | Transformer (DistilRoBERTa ONNX) | 25-60ms | HTTP 400 + auto-registers in ChromaDB |
-| 4 | Canary Injection | `secrets.token_hex()` + system prompt | < 1ms | N/A |
-| 5 | Egress Scanner | Canary check + leak indicators | < 2ms | HTTP 500 + auto-registers in ChromaDB |
-
-### Immunity Feedback Loop
-
-When Layers 3 or 5 detect a new attack that is not yet in ChromaDB,
-the attack prompt is automatically vectorized and registered. On the next
-identical or semantically similar request, Layer 2 blocks it directly in
-under 20ms without invoking the heavier AI model.
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/v1/notifications/recipients` | Register new security officer / SOC analyst. |
+| `GET` | `/v1/notifications/recipients` | List all recipients (filter by `?active_only=true`). |
+| `PATCH` | `/v1/notifications/recipients/{id}/toggle` | Activate or pause email notifications for a recipient. |
+| `PUT` | `/v1/notifications/recipients/{id}` | Update recipient details. |
+| `DELETE` | `/v1/notifications/recipients/{id}` | Remove recipient from database. |
 
 ---
 
-## Running Tests
+### 4. HITL Audit & Threat Dataset (Admin)
 
-```bash
-pytest tests/ -v
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/v1/audit/records` | Query intercepted requests (`?reviewed=bool`, `?is_threat=bool`, pagination). |
+| `POST` | `/v1/audit/{id}/review` | Submit human analyst verification (`is_threat`, `threat_category`, `reviewed_by_ci`). |
+| `GET` | `/v1/audit/export/seed` | Export verified threats as ChromaDB seed JSON. |
+
+---
+
+## Security Pipeline Specifications
+
+| Layer | Name | Mechanism | Typical Latency | Outcome on Threat |
+|---|---|---|---|---|
+| **L1** | Heuristic Filter | Regex patterns + banned keywords | < 1 ms | HTTP 400 |
+| **L2** | Vector Similarity | ChromaDB cosine search (`all-MiniLM-L6-v2`) | 5 - 20 ms | HTTP 400 |
+| **L3** | AI Classifier | Transformer (`DeBERTa-v3` / Prompt Guard) | 25 - 60 ms | HTTP 400 + Auto-learned in ChromaDB |
+| **L4** | Canary Injection | Cryptographic entropy token in system prompt | < 1 ms | Transparent forwarding |
+| **L5** | Egress Scanner | Canary integrity check + leak heuristics | < 2 ms | HTTP 500 + Auto-learned in ChromaDB |
 
 ---
 
@@ -184,58 +218,75 @@ pytest tests/ -v
 ```
 ai_gateway/
 ├── app/
-│   ├── main.py                         # FastAPI app factory + lifespan
+│   ├── main.py                         # FastAPI application factory & lifespan
 │   ├── api/
 │   │   ├── gateway.py                  # POST /v1/gateway/chat
-│   │   └── monitoring.py               # GET /health, POST /reset-vault
+│   │   ├── telescope.py                # Telescope metrics & stress testing runner
+│   │   ├── monitoring.py               # GET /health, POST /reset-vault
+│   │   ├── notifications.py            # CRUD /v1/notifications/recipients
+│   │   └── audit.py                    # GET /v1/audit/records, POST /review, export
 │   ├── core/
-│   │   ├── config.py                   # Pydantic Settings singleton
-│   │   ├── security.py                 # Bearer token validation + canary generation
-│   │   ├── metrics.py                  # Thread-safe in-memory metrics collector
+│   │   ├── config.py                   # Pydantic Settings configuration
+│   │   ├── security.py                 # RBAC Bearer authentication & canary generator
+│   │   ├── metrics.py                  # Rolling metrics collector with deque percentiles
 │   │   └── pipeline/
-│   │       ├── manager.py              # Pipeline orchestrator
-│   │       ├── layer_1_heuristics.py
-│   │       ├── layer_2_vectorial.py
-│   │       ├── layer_3_intelligence.py
-│   │       ├── layer_4_canary.py
-│   │       └── layer_5_egress.py
+│   │       ├── manager.py              # Orchestrator for 5-layer pipeline
+│   │       ├── layer_1_heuristics.py   # Regex & banned keyword filter
+│   │       ├── layer_2_vectorial.py    # ChromaDB semantic search
+│   │       ├── layer_3_intelligence.py # DeBERTa-v3 AI classifier
+│   │       ├── layer_4_canary.py       # Canary token injection
+│   │       └── layer_5_egress.py       # Egress audit & leakage detection
+│   ├── db/
+│   │   ├── session.py                  # Async SQLAlchemy session factory & init_db
+│   │   └── models.py                   # ORM models (users_notification, prompt_audit_dataset)
 │   ├── services/
-│   │   ├── vector_db.py                # ChromaDB wrapper
-│   │   ├── llm_client.py               # Groq Cloud async HTTP client
+│   │   ├── vector_db.py                # ChromaDB vector store service
+│   │   ├── llm_client.py               # Groq Cloud async HTTP client with mock fallback
 │   │   └── email_notifier.py           # Brevo SMTP alert service
 │   └── models/
-│       └── schemas.py                  # Pydantic v2 request/response models
-├── frontend/                           # Web UI (Chat + Security Inspector)
+│       ├── schemas.py                  # Request/Response Pydantic models
+│       └── schemas_admin.py            # Admin, Audit & Notification schemas
+├── frontend/                           # Web UI
+│   ├── index.html                      # Main chat & security inspector dashboard
+│   ├── style.css                       # Zero-scroll Slate/Charcoal stylesheet
+│   ├── app.js                          # Client logic, i18n & telemetry renderer
+│   └── telescope/                      # Telescope & Stress-Lab
+│       ├── index.html                  # Telescope monitor & stress UI
+│       ├── telescope.css               # Telescope design system
+│       └── telescope.js                # Animated pipeline, metrics & runner logic
 ├── data/
-│   └── seed_attacks.json               # Initial attack signature dataset
-├── docs/                               # Technical documentation
-├── tests/                              # Unit and E2E tests
-├── .env.example                        # Configuration template
-└── requirements.txt
+│   └── seed_attacks.json               # Seed dataset of known prompt injections
+├── sql/
+│   └── create_tables.sql               # PostgreSQL DDL schema with triggers
+├── docs/                               # Engineering documentation
+│   ├── arquitectura.md                 # Architecture design & data flow
+│   ├── especificacion_tecnica.md       # Technical engineering specification
+│   ├── guia_de_uso.md                  # Step-by-step user and demo guide
+│   └── reporte_utilidad_ai_gateway.md  # Strategic utility & ROI report
+├── tests/                              # Pytest test suite
+├── .env.example                        # Environment variables template
+├── requirements.txt                    # Python dependencies
+└── setup.sh                            # Automated setup script
 ```
 
 ---
 
-## Technology Stack
+## Running Automated Tests
 
-| Category | Technology |
-|----------|-----------|
-| Runtime | Python 3.10+ |
-| Web Framework | FastAPI + Uvicorn |
-| API Documentation | Scalar (scalar-fastapi) |
-| Vector Database | ChromaDB (embedded, local) |
-| AI Security Model | protectai/distilroberta-base-prompt-injection |
-| Embeddings | sentence-transformers (all-MiniLM-L6-v2) |
-| LLM Backend | Groq Cloud (llama-3.3-70b-versatile) |
-| HTTP Client | httpx (async) |
-| Email Alerts | Brevo SMTP (smtplib) |
-| Configuration | pydantic-settings |
+```bash
+# Run all 47 unit and integration tests
+pytest tests/ -v
+
+# Run specific test suites
+pytest tests/test_e2e_gateway.py -v      # End-to-end chat proxy tests
+pytest tests/test_pipeline_layers.py -v  # 5-layer pipeline isolation tests
+pytest tests/test_telescope.py -v        # Telescope & Stress-Lab tests
+pytest tests/test_notifications.py -v    # SOC notifications & RBAC tests
+pytest tests/test_audit.py -v            # Audit dataset & HITL tests
+```
 
 ---
 
-## Documentation
+## License
 
-Additional documentation is available in the `/docs` directory:
-
-- `docs/arquitectura.md` - Clean Architecture design and project structure
-- `docs/especificacion_tecnica.md` - Full engineering specification and pipeline details
+This project is developed as an academic and engineering thesis project under the MIT License.

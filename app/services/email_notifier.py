@@ -1,11 +1,16 @@
 """
-Asynchronous email notification service for security incident alerts.
+Email notification service for security incident alerts.
 
-Uses aiosmtplib to send HTML-formatted alert emails via Brevo SMTP
-without blocking the FastAPI event loop or adding latency to the
-client response. Dispatched via FastAPI BackgroundTasks.
+Uses smtplib to send HTML-formatted alert emails via Brevo SMTP.
+Dispatched via FastAPI BackgroundTasks as an async task to never block the client.
+
+Recipients are loaded dynamically from the 'users_notification' table on the main
+async event loop, avoiding cross-thread pool issues with asyncpg.
+Falls back to the static ALERT_RECIPIENT_EMAIL from .env if no active
+recipients are found in the database.
 """
 
+import asyncio
 import logging
 import smtplib
 import ssl
@@ -13,7 +18,11 @@ from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from sqlalchemy import select
+
 from app.core.config import Settings
+from app.db.models import NotificationRecipient
+from app.db.session import async_session_factory
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +108,72 @@ def _build_html_body(
     """
 
 
-def send_security_alert(
+async def _get_active_recipients(fallback_email: str) -> list[str]:
+    """
+    Fetches active recipient emails from the database asynchronously.
+
+    Falls back to the static fallback_email if no active recipients exist
+    or if the database is unavailable.
+
+    Args:
+        fallback_email: Static email from settings.alert_recipient_email.
+
+    Returns:
+        List of email addresses to notify.
+    """
+    try:
+        async with async_session_factory() as session:
+            result = await session.execute(
+                select(NotificationRecipient.email).where(
+                    NotificationRecipient.is_active.is_(True)
+                )
+            )
+            emails = list(result.scalars().all())
+            if emails:
+                return emails
+    except Exception as exc:
+        logger.warning(
+            "Could not load recipients from DB, falling back to static email: %s", exc
+        )
+
+    # Fallback: use the static email configured in .env
+    if fallback_email:
+        return [fallback_email]
+    return []
+
+
+def _send_smtp_blocking(
+    settings: Settings,
+    recipients: list[str],
+    message_str: str,
+    layer: str,
+) -> None:
+    """
+    Executes the blocking SMTP network handshake and send operations.
+    Run inside an asyncio worker thread pool via asyncio.to_thread.
+    """
+    try:
+        context = ssl.create_default_context()
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.sendmail(
+                settings.alert_sender_email,
+                recipients,
+                message_str,
+            )
+        logger.info(
+            "Security alert email sent to %d recipient(s) for event in %s.",
+            len(recipients),
+            layer,
+        )
+    except Exception as exc:
+        # Email failure must never crash the gateway or surface to the client.
+        logger.error("Failed to send security alert email via SMTP: %s", str(exc))
+
+
+async def send_security_alert(
     settings: Settings,
     user_id: str,
     session_id: str,
@@ -109,15 +183,12 @@ def send_security_alert(
     score: float | None = None,
 ) -> None:
     """
-    Sends a synchronous HTML security alert email via Brevo SMTP.
+    Asynchronous security alert email dispatcher via Brevo SMTP.
 
-    This function is intended to be dispatched as a FastAPI BackgroundTask,
-    ensuring it never blocks the response to the client. Synchronous smtplib
-    is used here because it is run in a thread pool by BackgroundTasks.
-
-    The email is only sent if:
-        - SMTP is enabled in settings (SMTP_ENABLED=True).
-        - The layer's severity level meets or exceeds ALERT_MIN_SEVERITY.
+    Dispatched as a FastAPI BackgroundTask. Because it is an async coroutine,
+    FastAPI executes it on the main asyncio event loop, enabling clean,
+    thread-safe database queries against asyncpg. The blocking SMTP call is
+    offloaded to a worker thread via asyncio.to_thread.
 
     Args:
         settings: Application configuration settings.
@@ -149,28 +220,25 @@ def send_security_alert(
         user_id, session_id, layer, reason, score, prompt_excerpt, timestamp
     )
 
+    # 1. Fetch active recipient list on the async event loop
+    recipients = await _get_active_recipients(settings.alert_recipient_email)
+
+    if not recipients:
+        logger.warning("No active notification recipients found. Skipping alert email.")
+        return
+
+    # 2. Build email payload
     message = MIMEMultipart("alternative")
     message["Subject"] = f"[SECURITY ALERT] AI Gateway: Threat Blocked by {layer}"
     message["From"] = settings.alert_sender_email
-    message["To"] = settings.alert_recipient_email
+    message["To"] = ", ".join(recipients)
     message.attach(MIMEText(html_body, "html"))
 
-    try:
-        context = ssl.create_default_context()
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-            server.ehlo()
-            server.starttls(context=context)
-            server.login(settings.smtp_user, settings.smtp_password)
-            server.sendmail(
-                settings.alert_sender_email,
-                settings.alert_recipient_email,
-                message.as_string(),
-            )
-        logger.info(
-            "Security alert email sent to %s for event in %s.",
-            settings.alert_recipient_email,
-            layer,
-        )
-    except Exception as exc:
-        # Email failure must never crash the gateway or surface to the client.
-        logger.error("Failed to send security alert email: %s", str(exc))
+    # 3. Offload blocking SMTP network call to a worker thread
+    await asyncio.to_thread(
+        _send_smtp_blocking,
+        settings,
+        recipients,
+        message.as_string(),
+        layer,
+    )

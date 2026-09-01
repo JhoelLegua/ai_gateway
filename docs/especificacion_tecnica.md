@@ -1,87 +1,123 @@
-# ⚙️ Especificación de Ingeniería: AI Gateway Perimetral (Prototipo)
+# ⚙️ Especificación Técnica de Ingeniería: AI Gateway Perimetral
 
-Este componente actúa como un **Proxy de Seguridad Interceptor**, diseñado para la detección temprana de ataques de inyección y la prevención de fuga de contexto mediante un pipeline de inspección profunda.
-
-## 1. Requerimientos Técnicos y Stack Tecnológico
-
-| Categoría | Tecnología Seleccionada | Propósito |
-| :--- | :--- | :--- |
-| **Entorno de Ejecución** | Python 3.10+ | Optimización de tipado y soporte asíncrono nativo. |
-| **Servidor Web** | FastAPI + Uvicorn | Servidor ASGI de alto rendimiento. |
-| **Documentación API** | **Scalar (OpenAPI)** | Interfaz interactiva de documentación en el path `/docs`. |
-| **Seguridad de Entrada** | `llm-guard` (Protect AI) | Parsing heurístico y gestión de modelos de inyección. |
-| **Base de Datos Vectorial** | `ChromaDB` | Motor embebido para firmas de ataques (In-Memory/Disco). |
-| **Modelos de IA** | ONNX / Hugging Face | Clasificadores Transformer ligeros optimizados para CPU. |
-| **Cliente HTTP** | `httpx` | Peticiones asíncronas hacia el backend/LLM. |
-| **Criptografía** | Módulo `secrets` | Generación de tokens canarios de alta entropía. |
+Este documento detalla los requerimientos, la especificación de interfaces de programación (API), el comportamiento de cada capa del pipeline, la arquitectura del dashboard de observabilidad **Telescope & Stress-Lab** y las matrices de decisión técnica.
 
 ---
 
-## 2. Arquitectura de Software y Pipeline de Ejecución
+## 1. Stack Tecnológico y Componentes
 
-El procesamiento sigue un flujo lineal de 5 capas de seguridad, divididas en fases de **Ingreso (Ingress)** y **Egreso (Egress)**.
-
-### Diagrama de Flujo Lógico
-
-```mermaid
-graph TD
-    A[Petición Cliente HTTP POST] --> B{Capa 1: Heurística}
-    B -- Fallo --> F[HTTP 400 Bad Request]
-    B -- Pass --> C{Capa 2: Vectorial}
-    C -- Fallo --> F
-    C -- Pass --> D{Capa 3: Inteligente}
-    D -- Fallo --> F
-    D -- Pass --> E[Capa 4: Inyección Canario]
-    E --> G[Reenvío a Agente / LLM Principal]
-    G --> H[Respuesta del LLM]
-    H --> I{Capa 5: Egress Scan}
-    I -- Anomalía --> J[HTTP 500 Internal Error]
-    I -- Seguro --> K[Retorno al Cliente HTTP 200]
-```
-
-### Detalle de las Capas
-1.  **Capa 1 (Heurística):** Bloqueo por palabras prohibidas y sintaxis maliciosa (Regex/BanSubstrings).
-2.  **Capa 2 (Vectorial):** Comparación semántica en `ChromaDB` contra historial de ataques confirmados.
-3.  **Capa 3 (Inteligente):** Clasificador de IA local (Prompt Guard) para detectar intención de *Jailbreak*.
-4.  **Capa 4 (Canario):** Inyección de un identificador criptográfico único para rastrear el flujo de respuesta.
-5.  **Capa 5 (Egress Scan):** Auditoría de salida para asegurar que el token canario no ha sido manipulado o revelado erróneamente por el LLM.
+| Categoría | Tecnología | Rol en la Arquitectura |
+|---|---|---|
+| **Runtime** | Python 3.10+ | Tipado estricto con Pydantic v2 y soporte asíncrono nativo (`asyncio`). |
+| **Framework Web** | FastAPI + Uvicorn | Servidor ASGI asíncrono con `lifespan` context manager y pooling HTTP. |
+| **Base de Datos Relacional** | PostgreSQL (`asyncpg` + `SQLAlchemy 2.0`) | Almacén persistente de auditoría HITL y destinatarios de alertas SOC. |
+| **Base de Datos Vectorial** | ChromaDB (persistente) | Almacenamiento local de firmas vectoriales de ataques conocidos. |
+| **Modelo de Clasificación** | `deepset/deberta-v3-base-injection` | Inferencia Transformer para detección de intenciones de ataque en CPU. |
+| **Modelo de Embeddings** | `sentence-transformers/all-MiniLM-L6-v2` | Vectorización semántica de texto en 384 dimensiones. |
+| **Proveedor LLM** | Groq Cloud (`qwen/qwen3.8-27b` / `llama-3.3-70b`) | Inferencia de ultra-baja latencia con fallback determinístico Mock. |
+| **Servicio de Alertas** | Brevo SMTP (`smtplib` + `asyncio.to_thread`) | Despacho asíncrono no bloqueante de reportes de incidentes a personal SOC. |
+| **Documentación de API** | Scalar (`scalar-fastapi`) | Renderizado OpenAPI interactivo en `/docs`. |
+| **Observabilidad & Estrés** | Telescope & Stress-Lab | Telemetría en tiempo real, percentiles P50/P95/Máx y generador de carga. |
+| **Frontend Web** | HTML5 / Vanilla JS / CSS3 Moderno | UI responsive en 100vh sin scroll vertical, bilingüe (ES/EN) y temas claros/oscuros. |
 
 ---
 
-## 3. Especificación de Endpoints (API)
+## 2. Especificación de Endpoints
 
-### 3.1. Documentación Técnica (Scalar)
-**Ruta:** `GET /docs`
+### 2.1. Endpoints de Chat Perimetral (Client Token)
 
-*   **Descripción:** Expone la especificación OpenAPI del Gateway mediante la interfaz de **Scalar**. Permite realizar pruebas de los endpoints en tiempo real, visualizar ejemplos de esquemas JSON y descargar la especificación para clientes externos.
-
-### 3.2. Intercepción y Enrutamiento Seguro
-**Ruta:** `POST /v1/gateway/chat`
-*   **Cuerpo (JSON):** `{"user_id": "string", "session_id": "string", "message": "string"}`
-*   **Respuesta 200:** Flujo seguro permitido.
-*   **Respuesta 400:** Bloqueo en entrada (Ingress).
-*   **Respuesta 500:** Bloqueo en salida (Egress - Fuga de datos detectada).
-
-### 3.3. Monitoreo y Mantenimiento
-*   **GET `/v1/gateway/health`:** Estadísticas de mitigación y salud de componentes.
-*   **POST `/v1/gateway/reset-vault`:** Limpieza total de la memoria de ataques en `ChromaDB`.
-
----
-
-## 4. Flujo de Inicialización y Calentamiento
-
-1.  **Configuración de Scalar:** Durante el arranque, FastAPI genera el esquema OpenAPI y el Gateway monta la interfaz de **Scalar** en `/docs`, deshabilitando el Swagger UI convencional para unificar el acceso.
-2.  **Persistencia Vectorial:** Inicializa `ChromaDB`. Si existe la carpeta `./gateway_vector_db`, recupera el conocimiento previo de ataques.
-3.  **Model Warming:** Carga los micro-modelos clasificadores ONNX desde la caché a la memoria RAM para garantizar una latencia mínima desde la primera petición.
-4.  **Async Pooling:** Configura el pool de conexiones `httpx` para una comunicación persistente con el LLM principal.
+#### `POST /v1/gateway/chat`
+* **Header:** `Authorization: Bearer <CLIENT_TOKEN>`
+* **Request:**
+  ```json
+  {
+    "user_id": "usr_001",
+    "session_id": "ses_001",
+    "message": "¿Cuáles son los requisitos para abrir una cuenta?",
+    "bypass_gateway": false
+  }
+  ```
+* **Códigos de Respuesta:**
+  - `200 OK`: Petición limpia y respuesta del LLM auditada con `canary_verified: true` y telemetría por capa.
+  - `400 Bad Request`: Bloqueado en Ingress (Capas 1, 2 o 3). Devuelve `layer`, `reason`, `telemetry` y `total_latency_ms`.
+  - `401 Unauthorized`: Token de cliente inválido o ausente.
+  - `500 Internal Server Error`: Bloqueado en Egress (Capa 5 - Fuga de canario o contexto detectada).
 
 ---
 
-## 5. Matriz de Decisiones de Seguridad
+### 2.2. Endpoints de Observabilidad y Stress-Lab (Telescope)
 
-| Escenario | Capa Activada | Acción del Gateway |
-| :--- | :--- | :--- |
-| Instrucción directa de "Override" | Capa 1 | Bloqueo por heurística inmediata. |
-| Intento de ataque previamente mitigado | Capa 2 | Bloqueo por alta similitud vectorial. |
-| Ingeniería social para bypass de reglas | Capa 3 | Bloqueo por clasificación de IA local. |
-| Alucinación que revela reglas internas | Capa 5 | Intercepción de salida y registro en BD vectorial. |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `GET` | `/v1/telescope/metrics` | Pública | Métricas agregadas en vivo: P50, P95, Máx, Promedio por capa y conteo de estados HTTP. |
+| `GET` | `/v1/telescope/history` | Pública | Lista rodante de los últimos 200 eventos de peticiones con desglose de latencia y estado. |
+| `POST` | `/v1/telescope/stress/run` | Client | Inicia una prueba de estrés asíncrona parametrizable (usuarios concurrentes, delay, iteraciones, mix). |
+| `POST` | `/v1/telescope/stress/stop` | Client | Cancela y detiene la prueba de estrés en ejecución. |
+| `GET` | `/v1/telescope/stress/status` | Pública | Estado en vivo del benchmark: progreso, peticiones exitosas/fallidas, errores y throughput. |
+
+---
+
+### 2.3. Endpoints de Notificaciones y Equipo SOC (Admin Token)
+
+* **Header:** `Authorization: Bearer <ADMIN_TOKEN>`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/v1/notifications/recipients` | Registra un nuevo destinatario (`first_name`, `last_name`, `ci`, `email`, `role`, `is_active`). |
+| `GET` | `/v1/notifications/recipients` | Lista todos los destinatarios (`?active_only=true` opcional). |
+| `PATCH` | `/v1/notifications/recipients/{id}/toggle` | Invierte el estado `is_active` para silenciar o reactivar alertas. |
+| `PUT` | `/v1/notifications/recipients/{id}` | Actualización parcial o total de datos del destinatario. |
+| `DELETE` | `/v1/notifications/recipients/{id}` | Eliminación física del registro de la base de datos. |
+
+---
+
+### 2.4. Endpoints de Auditoría y Dataset HITL (Admin Token)
+
+* **Header:** `Authorization: Bearer <ADMIN_TOKEN>`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/v1/audit/records` | Consulta registros de prompts interceptados (`?reviewed=bool`, `?is_threat=bool`, paginación). |
+| `POST` | `/v1/audit/{id}/review` | Registra la validación humana de analista (`is_threat: bool`, `threat_category`, `reviewed_by_ci`). |
+| `GET` | `/v1/audit/export/seed` | Exporta amenazas confirmadas (`reviewed=true` y `is_threat=true`) en formato JSON compatible con ChromaDB. |
+
+---
+
+### 2.5. Endpoints de Mantenimiento y UI
+
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| `GET` | `/v1/gateway/health` | Pública | Métricas del sistema, recuento de firmas ChromaDB y estado de modelos. |
+| `POST` | `/v1/gateway/reset-vault` | Admin | Limpia las firmas aprendidas en ChromaDB y restaura el dataset semilla. |
+| `GET` | `/docs` | Pública | Documentación Scalar interactiva. |
+| `GET` | `/app/` | Pública | Frontend web con chat, playground de ataques e inspector de seguridad. |
+| `GET` | `/telescope` | Pública | Redirección a `/app/telescope/` para el monitor Telescope y Stress-Lab. |
+
+---
+
+## 3. Matriz de Decisiones y Respuestas por Capa
+
+| Capa | Nombre | Condición de Activación | Acción y Salida |
+|---|---|---|---|
+| **L1** | Heurística | Coincidencia de Regex o palabras clave prohibidas. | HTTP 400. Alerta LOW en Brevo. |
+| **L2** | Vectorial | Distancia coseno en ChromaDB < `SIMILARITY_THRESHOLD` (0.15). | HTTP 400. Alerta LOW en Brevo. |
+| **L3** | Inteligencia IA | Inferencia DeBERTa con score > `INJECTION_SCORE_THRESHOLD` (0.75). | HTTP 400. Auto-aprende en ChromaDB. Alerta MEDIUM en Brevo. |
+| **L4** | Canario | Inyección del token `BnkCanary_<hex>` en el system prompt antes de invocar al LLM. | Paso transparente hacia el LLM. |
+| **L5** | Escáner Egress | Detección del token canario o patrones de fuga en la respuesta del LLM. | HTTP 500. Auto-aprende en ChromaDB. Alerta HIGH en Brevo. |
+
+---
+
+## 4. Motor de Pruebas de Carga y Métricas de Rendimiento (Stress-Lab)
+
+El módulo Telescope incluye un runner asíncrono basado en `asyncio.create_task` y semáforos de concurrencia:
+
+1. **Parámetros configurables:**
+   - **Usuarios Concurrentes:** 1 a 50 clientes simultáneos.
+   - **Tiempo entre Peticiones (Delay):** 0 a 3000 ms.
+   - **Iteraciones / Bucles:** 1 a 20 repeticiones por usuario.
+   - **Mix de Tráfico:** Proporción de tráfico benigno (prompts bancarios legítimos) vs. vectores de ataque (Inyecciones L1, L2, L3 y L5).
+
+2. **Cálculo de Percentiles en Tiempo Real:**
+   - Estructura `collections.deque(maxlen=10000)` para muestreo continuo de latencias sin degradación de memoria.
+   - Cálculo instantáneo de **P50 (Mediana)**, **P95 (Cola de alta latencia)**, **Máximo** y **Promedio**.
+   - Histograma de respuestas HTTP: `200 OK` (Pasan limpio), `400 Bad Request` (Bloqueados en Ingress), `500 Error` (Bloqueados en Egress).

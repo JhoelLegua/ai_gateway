@@ -24,6 +24,9 @@ htmlcov/
 
 # Local Data, Model Caches & Logs
 data/gateway_vector_db/
+*.db
+*.sqlite
+*.sqlite3
 models_cache/
 logs/
 *.log

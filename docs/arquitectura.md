@@ -1,107 +1,144 @@
-### 1. Arquitectura del Proyecto
+# 🏛️ Arquitectura del Sistema: AI Gateway Perimetral
 
-La estructura sigue el patrón de **Clean Architecture** adaptada para microservicios ligeros en Python.
+Este documento describe la arquitectura de software, el diseño modular bajo principios de **Clean Architecture**, los flujos de datos y la integración de la base de datos relacional (PostgreSQL), la base vectorial (ChromaDB), el sistema de control de acceso por roles (RBAC) y las alertas en tiempo real.
+
+---
+
+## 1. Estructura y Organización Modular
+
+El proyecto sigue una separación estricta de responsabilidades en capas:
 
 ```text
-ai-gateway-perimetral/
+ai_gateway/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py                 # Punto de entrada FastAPI + Config Scalar
-│   ├── api/                    # Definición de Endpoints
-│   │   ├── __init__.py
-│   │   ├── gateway.py          # /v1/gateway/chat
-│   │   └── monitoring.py       # /v1/gateway/health y /v1/gateway/reset
-│   ├── core/                   # El "Cerebro" del Gateway
-│   │   ├── __init__.py
-│   │   ├── config.py           # Gestión de variables de entorno (.env)
-│   │   ├── security.py         # Generador de Tokens Canario
-│   │   └── pipeline/           # Implementación de las 5 Capas
-│   │       ├── __init__.py
-│   │       ├── manager.py      # Orquestador del flujo Ingress/Egress
-│   │       ├── layer_1_heuristics.py
-│   │       ├── layer_2_vectorial.py
-│   │       ├── layer_3_intelligence.py
-│   │       └── layer_5_egress.py
-│   ├── services/               # Integraciones Externas
-│   │   ├── __init__.py
-│   │   ├── llm_client.py       # Cliente HTTPX asíncrono para el Agente LLM
-│   │   └── vector_db.py        # Wrapper para ChromaDB
-│   └── models/                 # Esquemas Pydantic (Request/Response)
-│       ├── __init__.py
-│       └── schemas.py
-├── data/                       # Almacenamiento local de ChromaDB
-├── models_cache/               # Caché local para modelos ONNX/Hugging Face
-├── tests/                      # Pruebas unitarias de inyección
-├── .env                        # Variables de entorno reales (no subir)
-├── .env.example                # Plantilla de configuración
-├── requirements.txt            # Dependencias del proyecto
-└── README.md
+│   ├── main.py                         # Application factory + Lifespan + Rutas
+│   ├── api/                            # Capa de Controladores / Endpoints REST
+│   │   ├── gateway.py                  # POST /v1/gateway/chat (Client Token)
+│   │   ├── monitoring.py               # GET /health, POST /reset-vault
+│   │   ├── notifications.py            # CRUD /v1/notifications/recipients (Admin Token)
+│   │   └── audit.py                    # GET /v1/audit/records, POST /review, GET /export/seed
+│   ├── core/                           # Capa de Dominio y Lógica Perimetral
+│   │   ├── config.py                   # Pydantic Settings singleton (.env)
+│   │   ├── security.py                 # RBAC (Client vs Admin Token) + Canarios
+│   │   ├── metrics.py                  # Recolector de métricas in-memory
+│   │   └── pipeline/                   # Orquestación de las 5 Capas de Seguridad
+│   │       ├── manager.py              # Orquestador del flujo Ingress/Egress
+│   │       ├── layer_1_heuristics.py   # Filtro Heurístico (<1ms)
+│   │       ├── layer_2_vectorial.py    # Similitud Vectorial ChromaDB (5-20ms)
+│   │       ├── layer_3_intelligence.py # Clasificador IA Transformer (25-60ms)
+│   │       ├── layer_4_canary.py       # Inyección de Token Canario (<1ms)
+│   │       └── layer_5_egress.py       # Escáner de Salida y Fugas (<2ms)
+│   ├── db/                             # Capa de Persistencia Relacional
+│   │   ├── session.py                  # Async Engine (asyncpg) + get_db + init_db
+│   │   └── models.py                   # ORM: users_notification, prompt_audit_dataset
+│   ├── services/                       # Capa de Integraciones Externas
+│   │   ├── vector_db.py                # Wrapper persistente de ChromaDB
+│   │   ├── llm_client.py               # Cliente asíncrono httpx para Groq Cloud
+│   │   └── email_notifier.py           # Servicio de alertas SMTP vía Brevo
+│   └── models/                         # Esquemas de Datos (Pydantic v2)
+│       ├── schemas.py                  # Schemas de chat, telemetría y respuestas
+│       └── schemas_admin.py            # Schemas de administración y auditoría HITL
+├── frontend/                           # UI de Pruebas (Chat + Inspector en Vivo)
+├── data/                               # Almacenamiento local de ChromaDB y seed dataset
+├── sql/
+│   └── create_tables.sql               # Script DDL para inicialización en PostgreSQL
+└── docs/                               # Documentación de ingeniería y reportes
 ```
 
 ---
 
-### 2. Archivo: `.env.example`
+## 2. Diagrama de Arquitectura y Flujo de Componentes
 
-Este archivo define las configuraciones necesarias para que el Gateway se comunique con el modelo principal y gestione sus umbrales de seguridad.
+```mermaid
+flowchart TD
+    ClientApp[App Cliente / Frontend] -->|Bearer: CLIENT_TOKEN| APIChat[POST /v1/gateway/chat]
+    AdminUser[Oficial SOC / Auditor] -->|Bearer: ADMIN_TOKEN| APIAdmin[Endpoints /v1/notifications/* y /v1/audit/*]
 
-```bash
-# Configuración del Servidor Gateway
-APP_NAME="AI-Gateway-Perimetral"
-APP_ENV=development
-HOST=0.0.0.0
-PORT=8000
+    subgraph FastAPICore [AI Gateway - FastAPI Engine]
+        APIChat --> Security[Control de Acceso RBAC]
+        APIAdmin --> Security
+        
+        Security --> Pipeline[Pipeline Orchestrator]
+        
+        subgraph Pipeline5Capas [Pipeline de Inspección]
+            L1[Capa 1: Heurística] --> L2[Capa 2: ChromaDB Vectorial]
+            L2 --> L3[Capa 3: DeBERTa Classifier]
+            L3 --> L4[Capa 4: Inyección Canario]
+            L4 --> LLMCall[Invocación LLM]
+            LLMCall --> L5[Capa 5: Escáner Egress]
+        end
+        
+        Pipeline --> Pipeline5Capas
+    end
 
-# URL del Agente LLM / Backend Real (A donde se reenvía el prompt seguro)
-BACKEND_LLM_URL="http://localhost:8080/v1/chat"
-BACKEND_API_KEY="sk-tu-api-key-aqui"
+    subgraph ExternalServices [Servicios Externos y Persistencia]
+        LLMCall -->|Prompt Seguro| GroqLLM[Groq Cloud LLM]
+        GroqLLM -->|Respuesta Bruta| L5
 
-# Configuración de Seguridad - Capa 2 (Vectorial)
-VECTOR_DB_PATH="./data/gateway_vector_db"
-SIMILARITY_THRESHOLD=0.15
-
-# Configuración de Seguridad - Capa 3 (AI Classifier)
-# Modelos sugeridos: meta-llama/Prompt-Guard-86M-v1 o protectai/distilroberta-base-prompt-injection
-PROMPT_GUARD_MODEL="protectai/distilroberta-base-prompt-injection"
-
-# Configuración de Seguridad - Capa 4/5 (Canario)
-CANARY_PREFIX="BnkCanary_"
-
-# Caché de Modelos
-HF_HOME="./models_cache"
+        L3 -.->|Auto-aprender Ataques| ChromaDB[(ChromaDB Embeddings)]
+        L5 -.->|Auto-aprender Fugas| ChromaDB
+        
+        FastAPICore -->|Registro Automático de Prompts| PG_Audit[(PostgreSQL: prompt_audit_dataset)]
+        FastAPICore -->|Consulta Destinatarios Activos| PG_Users[(PostgreSQL: users_notification)]
+        
+        FastAPICore -.->|Alerta Asíncrona de Incidentes| Brevo[Brevo SMTP Service]
+        Brevo --> SecurityTeam[Emails a Oficiales SOC Activos]
+    end
 ```
 
 ---
 
-### 3. Archivo: `requirements.txt`
+## 3. Modelo de Datos Relacional (PostgreSQL)
 
-Las librerías están seleccionadas para garantizar el soporte **asíncrono** y el procesamiento **In-Memory**.
+### Tabla 1: `users_notification`
+Gestiona dinámicamente la lista de destinatarios para incidentes de seguridad sin necesidad de reiniciar el microservicio.
 
-```text
-# Web Server y API
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-scalar-fastapi>=1.0.0      # Motor de documentación interactiva
-python-dotenv>=1.0.0
-pydantic-settings>=2.1.0
-
-# Seguridad y Detección
-llm-guard>=0.3.0           # Framework principal de seguridad para LLMs
-chromadb>=0.4.22           # Base de datos vectorial embebida
-sentence-transformers>=2.3.0 # Para generación de embeddings locales
-httpx>=0.26.0              # Cliente HTTP asíncrono
-
-# Procesamiento de IA (Optimizado para CPU)
-onnx>=1.15.0
-onnxruntime>=1.17.0
-torch --index-url https://download.pytorch.org/whl/cpu # Solo versión CPU para ligereza
-transformers>=4.37.0
-
-# Utilidades
-python-multipart>=0.0.9
-secrets>=1.0.2
+```sql
+CREATE TABLE users_notification (
+    id          SERIAL PRIMARY KEY,
+    first_name  VARCHAR(100) NOT NULL,
+    last_name   VARCHAR(100) NOT NULL,
+    ci          VARCHAR(30) NOT NULL UNIQUE,
+    email       VARCHAR(255) NOT NULL UNIQUE,
+    role        VARCHAR(50) NOT NULL DEFAULT 'SOC_ANALYST',
+    is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 ```
 
-### Notas adicionales sobre el despliegue:
-*   **Scalar:** En `main.py`, se configurará para que al acceder a `/docs` se renderice la interfaz de Scalar consumiendo el JSON generado por FastAPI en `/openapi.json`.
-*   **Modelos ONNX:** La primera vez que se ejecute el Gateway con `llm-guard`, este descargará automáticamente los modelos a la carpeta `models_cache`. Es recomendable tener al menos 2GB de RAM libres para el "calentamiento" inicial.
-*   **ChromaDB:** Se configura en modo persistente apuntando a `./data/` para que los ataques detectados no se pierdan al reiniciar el servidor.
+### Tabla 2: `prompt_audit_dataset`
+Registra el 100% de las peticiones para análisis forense, telemetría y el flujo de etiquetado humano (*Human-in-the-Loop*).
+
+```sql
+CREATE TABLE prompt_audit_dataset (
+    id                  SERIAL PRIMARY KEY,
+    user_id             VARCHAR(64) NOT NULL,
+    session_id          VARCHAR(64) NOT NULL,
+    prompt_text         TEXT NOT NULL,
+    predicted_threat    BOOLEAN NOT NULL,
+    confidence_score    FLOAT,
+    blocked_by_layer    VARCHAR(50),
+    block_reason        TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reviewed            BOOLEAN NOT NULL DEFAULT FALSE,
+    is_threat           BOOLEAN,
+    threat_category     VARCHAR(50),
+    reviewed_by_ci      VARCHAR(30),
+    reviewed_at         TIMESTAMPTZ
+);
+```
+
+---
+
+## 4. Control de Acceso por Roles (RBAC)
+
+La autenticación utiliza comparación criptográfica en tiempo constante (`secrets.compare_digest`) sobre hashes **SHA-256**:
+
+1. **Client Token (`ALLOWED_CLIENT_API_KEYS_HASHES`):**
+   - Acceso exclusivo al consumo del chat seguro (`POST /v1/gateway/chat`).
+   - Permite aislar a las aplicaciones finales de los datos de gobernanza interna.
+2. **Admin Token (`ALLOWED_ADMIN_API_KEYS_HASHES`):**
+   - Acceso a la gestión de personal de seguridad (`/v1/notifications/*`).
+   - Acceso a la revisión y exportación de datos de auditoría (`/v1/audit/*`).
+   - Acceso al reseteo de la memoria vectorial (`/v1/gateway/reset-vault`).

@@ -19,13 +19,16 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from scalar_fastapi import get_scalar_api_reference
 
 from app.api import gateway, monitoring
+from app.api import notifications, audit, telescope
 from app.core.config import get_settings
 from app.core.logging_config import setup_logging
 from app.core.pipeline import layer_3_intelligence
+from app.db.session import init_db
 from app.services.llm_client import LLMClientService
 from app.services.vector_db import VectorDBService
 
@@ -63,6 +66,10 @@ async def lifespan(app: FastAPI):
     os.environ["HF_HOME"] = settings.hf_home
 
     logger.info("Starting %s [env: %s]", settings.app_name, settings.app_env)
+
+    # Initialize relational database tables.
+    await init_db()
+    logger.info("Database tables verified/created.")
 
     # Initialize ChromaDB service.
     vector_db = VectorDBService(settings)
@@ -153,6 +160,17 @@ def create_app() -> FastAPI:
     # -----------------------------------------------------------------------
     app.include_router(gateway.router)
     app.include_router(monitoring.router)
+    app.include_router(notifications.router)
+    app.include_router(audit.router)
+    app.include_router(telescope.router)
+
+    # -----------------------------------------------------------------------
+    # Telescope redirect: GET /telescope → SPA
+    # -----------------------------------------------------------------------
+    @app.get("/telescope", include_in_schema=False)
+    async def telescope_redirect():
+        """Convenience redirect to the Telescope & Stress-Lab SPA."""
+        return RedirectResponse(url="/app/telescope/")
 
     # -----------------------------------------------------------------------
     # Scalar API Documentation

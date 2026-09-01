@@ -1,85 +1,157 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="AI Gateway Perimetral - Real-time security inspection dashboard for LLM applications.">
   <title>AI Gateway Perimetral</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app-wrapper">
 
-    <!-- Header -->
+    <!-- ── Header ─────────────────────────────────────────────────────────── -->
     <header class="header">
       <div class="header-left">
-        <div class="logo-icon">GW</div>
+        <div class="logo-box">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
         <div class="header-title">
           <h1 data-i18n="app_title">AI Gateway Perimetral</h1>
           <span class="header-subtitle" data-i18n="app_subtitle">Pipeline de Inspección de Seguridad</span>
         </div>
       </div>
+
       <div class="header-right">
+        <!-- Telescope -->
+        <a href="/telescope" class="nav-link-btn telescope-btn" title="Abrir monitor Telescope">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+            <path d="M2 12h20"></path>
+          </svg>
+          <span data-i18n="btn_telescope">Telescope</span>
+        </a>
+
+        <!-- Scalar Docs -->
+        <a href="/docs" target="_blank" class="nav-link-btn" title="Documentación API">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span data-i18n="btn_api_docs">Scalar Docs</span>
+        </a>
+
         <!-- Controls: Language & Theme -->
         <div class="control-group">
-          <!-- Language Selector -->
           <div class="segmented-control" id="lang-control">
             <button class="segmented-btn active" id="btn-lang-es" onclick="setLanguage('es')">ES</button>
             <button class="segmented-btn" id="btn-lang-en" onclick="setLanguage('en')">EN</button>
           </div>
 
-          <!-- Theme Toggle -->
-          <button class="theme-toggle-btn" id="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
-            <span id="theme-icon">☀️</span>
+          <button class="icon-btn" id="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <svg id="theme-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <!-- icon updated by JS -->
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
           </button>
         </div>
 
+        <!-- Online Status -->
         <div class="status-badge" id="status-badge">
           <span class="status-dot" id="status-dot"></span>
           <span id="status-text" data-i18n="status_connecting">Conectando...</span>
         </div>
-        <a href="/docs" target="_blank" class="btn btn-outline" data-i18n="btn_api_docs">Scalar Docs</a>
       </div>
     </header>
 
-    <!-- Mode Toggle Banner -->
+    <!-- ── Mode Banner ────────────────────────────────────────────────────── -->
     <div class="mode-banner">
       <span class="mode-label" data-i18n="mode_label">Modo Gateway:</span>
       <div class="toggle-group" id="mode-toggle-group">
-        <button class="toggle-btn active" id="btn-protected" onclick="setMode(true)" data-i18n="btn_mode_protected">🛡️ Protegido</button>
-        <button class="toggle-btn" id="btn-bypass" onclick="setMode(false)" data-i18n="btn_mode_bypass">⚠️ Bypass (Directo al LLM)</button>
+        <button class="toggle-btn active" id="btn-protected" onclick="setMode(true)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span data-i18n="btn_mode_protected">Protegido</span>
+        </button>
+        <button class="toggle-btn" id="btn-bypass" onclick="setMode(false)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span data-i18n="btn_mode_bypass">Bypass (Directo al LLM)</span>
+        </button>
       </div>
-      <span class="mode-description" id="mode-description" data-i18n="mode_desc_protected">Las 5 capas de seguridad están activas. Las peticiones son inspeccionadas antes de alcanzar el LLM.</span>
+      <span class="mode-description" id="mode-description" data-i18n="mode_desc_protected">
+        Las 5 capas de seguridad están activas.
+      </span>
     </div>
 
+    <!-- ── Main 2-Column Layout ───────────────────────────────────────────── -->
     <main class="main-layout">
 
-      <!-- Left Panel: Chat -->
+      <!-- ── Left Panel: Chat ─────────────────────────────────────────────── -->
       <section class="panel chat-panel">
         <div class="panel-header">
-          <span class="panel-title" data-i18n="chat_title">Interfaz de Chat</span>
-          <button class="btn btn-ghost btn-small" onclick="clearChat()" data-i18n="btn_clear">Limpiar</button>
+          <span class="panel-title">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span data-i18n="chat_title">Interfaz de Chat</span>
+          </span>
+          <button class="btn-ghost" onclick="clearChat()">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span data-i18n="btn_clear">Limpiar</span>
+          </button>
         </div>
 
-        <!-- Quick Attack Playground -->
+        <!-- Playground -->
         <div class="playground-section">
           <span class="playground-label" data-i18n="playground_label">Playground de Ataques y Pruebas</span>
           <div class="attack-buttons" id="attack-buttons">
-            <button class="attack-btn safe" onclick="loadPreset('safe')" data-i18n="preset_safe">🟢 Prompt Benigno</button>
-            <button class="attack-btn layer1" onclick="loadPreset('layer1')" data-i18n="preset_layer1">🔴 Capa 1: Regex</button>
-            <button class="attack-btn layer2" onclick="loadPreset('layer2')" data-i18n="preset_layer2">🔴 Capa 2: Vectorial</button>
-            <button class="attack-btn layer3" onclick="loadPreset('layer3')" data-i18n="preset_layer3">🔴 Capa 3: Jailbreak IA</button>
-            <button class="attack-btn layer5" onclick="loadPreset('layer5')" data-i18n="preset_layer5">🔴 Capa 5: Fuga Canario</button>
+            <button class="attack-btn safe" onclick="loadPreset('safe')">
+              <span class="btn-dot"></span>
+              <span data-i18n="preset_safe">Prompt Benigno</span>
+            </button>
+            <button class="attack-btn threat" onclick="loadPreset('layer1')">
+              <span class="btn-dot"></span>
+              <span data-i18n="preset_layer1">Capa 1: Regex</span>
+            </button>
+            <button class="attack-btn threat" onclick="loadPreset('layer2')">
+              <span class="btn-dot"></span>
+              <span data-i18n="preset_layer2">Capa 2: Vectorial</span>
+            </button>
+            <button class="attack-btn threat" onclick="loadPreset('layer3')">
+              <span class="btn-dot"></span>
+              <span data-i18n="preset_layer3">Capa 3: Jailbreak IA</span>
+            </button>
+            <button class="attack-btn threat" onclick="loadPreset('layer5')">
+              <span class="btn-dot"></span>
+              <span data-i18n="preset_layer5">Capa 5: Fuga Canario</span>
+            </button>
           </div>
         </div>
 
-        <!-- Chat Messages -->
+        <!-- Messages -->
         <div class="chat-messages" id="chat-messages">
           <div class="chat-welcome">
-            <div class="welcome-icon">GW</div>
-            <p data-i18n="chat_welcome_text">Selecciona un escenario de prueba del playground o escribe un mensaje. El inspector de seguridad a la derecha mostrará la telemetría en tiempo real.</p>
+            <div class="welcome-box">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <p data-i18n="chat_welcome_text">
+              Selecciona un escenario del playground o escribe un mensaje. El inspector mostrará la telemetría en tiempo real.
+            </p>
           </div>
         </div>
 
@@ -89,30 +161,40 @@
             id="message-input"
             class="message-input"
             placeholder="Escribe tu mensaje aquí..."
-            rows="3"
+            rows="2"
             onkeydown="handleKeydown(event)"
             data-i18n-placeholder="input_placeholder"
           ></textarea>
-          <button class="btn btn-primary send-btn" id="send-btn" onclick="sendMessage()">
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
             <span id="send-label" data-i18n="btn_send">Enviar</span>
           </button>
         </div>
 
         <div class="input-footer">
-          <span class="input-hint" data-i18n="input_hint">Ctrl+Enter para enviar</span>
-          <span class="session-info"><span data-i18n="session_label">Sesión</span>: <code id="session-id-display">ses_001</code></span>
+          <span data-i18n="input_hint">Ctrl+Enter para enviar</span>
+          <span><span data-i18n="session_label">Sesión</span>: <code id="session-id-display">ses_001</code></span>
         </div>
       </section>
 
-      <!-- Right Panel: Security Inspector -->
+      <!-- ── Right Panel: Security Inspector ─────────────────────────────── -->
       <section class="panel inspector-panel">
         <div class="panel-header">
-          <span class="panel-title" data-i18n="inspector_title">Inspector de Seguridad</span>
+          <span class="panel-title">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <span data-i18n="inspector_title">Inspector de Seguridad</span>
+          </span>
           <span class="inspector-subtitle" data-i18n="inspector_subtitle">Telemetría de capas en vivo</span>
         </div>
 
-        <!-- Pipeline Layers -->
+        <!-- Layers -->
         <div class="layers-container" id="layers-container">
+
           <div class="layer-card idle" id="layer-1">
             <div class="layer-header">
               <div class="layer-badge">L1</div>
@@ -185,13 +267,14 @@
             <div class="layer-detail" id="detail-5" data-i18n="waiting_request">En espera de petición...</div>
             <div class="layer-latency" id="latency-5"></div>
           </div>
+
         </div>
 
         <!-- Summary Bar -->
         <div class="summary-bar" id="summary-bar">
           <div class="summary-item">
             <span class="summary-label" data-i18n="summary_latency">Latencia Total</span>
-            <span class="summary-value" id="total-latency">-</span>
+            <span class="summary-value cyan" id="total-latency">-</span>
           </div>
           <div class="summary-item">
             <span class="summary-label" data-i18n="summary_verdict">Veredicto</span>
@@ -199,7 +282,7 @@
           </div>
           <div class="summary-item">
             <span class="summary-label" data-i18n="summary_canary">Canario</span>
-            <span class="summary-value" id="canary-status">-</span>
+            <span class="summary-value green" id="canary-status">-</span>
           </div>
         </div>
       </section>

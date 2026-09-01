@@ -95,7 +95,7 @@ class LLMClientService:
             "model": self._settings.backend_model,
             "messages": messages,
             "temperature": 0.3,
-            "max_tokens": 512,
+            "max_tokens": self._settings.llm_max_tokens,
         }
 
         last_error: Exception | None = None
