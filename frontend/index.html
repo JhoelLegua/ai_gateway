@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Gateway Perimetral - Real-time security inspection dashboard for LLM applications.">
+  <title>AI Gateway Perimetral</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-wrapper">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-icon">GW</div>
+        <div class="header-title">
+          <h1 data-i18n="app_title">AI Gateway Perimetral</h1>
+          <span class="header-subtitle" data-i18n="app_subtitle">Pipeline de Inspección de Seguridad</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <!-- Controls: Language & Theme -->
+        <div class="control-group">
+          <!-- Language Selector -->
+          <div class="segmented-control" id="lang-control">
+            <button class="segmented-btn active" id="btn-lang-es" onclick="setLanguage('es')">ES</button>
+            <button class="segmented-btn" id="btn-lang-en" onclick="setLanguage('en')">EN</button>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button class="theme-toggle-btn" id="btn-theme" onclick="toggleTheme()" title="Cambiar tema">
+            <span id="theme-icon">☀️</span>
+          </button>
+        </div>
+
+        <div class="status-badge" id="status-badge">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text" data-i18n="status_connecting">Conectando...</span>
+        </div>
+        <a href="/docs" target="_blank" class="btn btn-outline" data-i18n="btn_api_docs">Scalar Docs</a>
+      </div>
+    </header>
+
+    <!-- Mode Toggle Banner -->
+    <div class="mode-banner">
+      <span class="mode-label" data-i18n="mode_label">Modo Gateway:</span>
+      <div class="toggle-group" id="mode-toggle-group">
+        <button class="toggle-btn active" id="btn-protected" onclick="setMode(true)" data-i18n="btn_mode_protected">🛡️ Protegido</button>
+        <button class="toggle-btn" id="btn-bypass" onclick="setMode(false)" data-i18n="btn_mode_bypass">⚠️ Bypass (Directo al LLM)</button>
+      </div>
+      <span class="mode-description" id="mode-description" data-i18n="mode_desc_protected">Las 5 capas de seguridad están activas. Las peticiones son inspeccionadas antes de alcanzar el LLM.</span>
+    </div>
+
+    <main class="main-layout">
+
+      <!-- Left Panel: Chat -->
+      <section class="panel chat-panel">
+        <div class="panel-header">
+          <span class="panel-title" data-i18n="chat_title">Interfaz de Chat</span>
+          <button class="btn btn-ghost btn-small" onclick="clearChat()" data-i18n="btn_clear">Limpiar</button>
+        </div>
+
+        <!-- Quick Attack Playground -->
+        <div class="playground-section">
+          <span class="playground-label" data-i18n="playground_label">Playground de Ataques y Pruebas</span>
+          <div class="attack-buttons" id="attack-buttons">
+            <button class="attack-btn safe" onclick="loadPreset('safe')" data-i18n="preset_safe">🟢 Prompt Benigno</button>
+            <button class="attack-btn layer1" onclick="loadPreset('layer1')" data-i18n="preset_layer1">🔴 Capa 1: Regex</button>
+            <button class="attack-btn layer2" onclick="loadPreset('layer2')" data-i18n="preset_layer2">🔴 Capa 2: Vectorial</button>
+            <button class="attack-btn layer3" onclick="loadPreset('layer3')" data-i18n="preset_layer3">🔴 Capa 3: Jailbreak IA</button>
+            <button class="attack-btn layer5" onclick="loadPreset('layer5')" data-i18n="preset_layer5">🔴 Capa 5: Fuga Canario</button>
+          </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-welcome">
+            <div class="welcome-icon">GW</div>
+            <p data-i18n="chat_welcome_text">Selecciona un escenario de prueba del playground o escribe un mensaje. El inspector de seguridad a la derecha mostrará la telemetría en tiempo real.</p>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+          <textarea
+            id="message-input"
+            class="message-input"
+            placeholder="Escribe tu mensaje aquí..."
+            rows="3"
+            onkeydown="handleKeydown(event)"
+            data-i18n-placeholder="input_placeholder"
+          ></textarea>
+          <button class="btn btn-primary send-btn" id="send-btn" onclick="sendMessage()">
+            <span id="send-label" data-i18n="btn_send">Enviar</span>
+          </button>
+        </div>
+
+        <div class="input-footer">
+          <span class="input-hint" data-i18n="input_hint">Ctrl+Enter para enviar</span>
+          <span class="session-info"><span data-i18n="session_label">Sesión</span>: <code id="session-id-display">ses_001</code></span>
+        </div>
+      </section>
+
+      <!-- Right Panel: Security Inspector -->
+      <section class="panel inspector-panel">
+        <div class="panel-header">
+          <span class="panel-title" data-i18n="inspector_title">Inspector de Seguridad</span>
+          <span class="inspector-subtitle" data-i18n="inspector_subtitle">Telemetría de capas en vivo</span>
+        </div>
+
+        <!-- Pipeline Layers -->
+        <div class="layers-container" id="layers-container">
+          <div class="layer-card idle" id="layer-1">
+            <div class="layer-header">
+              <div class="layer-badge">L1</div>
+              <div class="layer-info">
+                <span class="layer-name" data-i18n="l1_name">Capa 1: Filtro Heurístico</span>
+                <span class="layer-desc" data-i18n="l1_desc">Regex / Palabras Prohibidas (&lt; 1ms)</span>
+              </div>
+              <div class="layer-status-icon" id="icon-1">-</div>
+            </div>
+            <div class="layer-detail" id="detail-1" data-i18n="waiting_request">En espera de petición...</div>
+            <div class="layer-latency" id="latency-1"></div>
+          </div>
+
+          <div class="layer-connector"></div>
+
+          <div class="layer-card idle" id="layer-2">
+            <div class="layer-header">
+              <div class="layer-badge">L2</div>
+              <div class="layer-info">
+                <span class="layer-name" data-i18n="l2_name">Capa 2: Similitud Vectorial</span>
+                <span class="layer-desc" data-i18n="l2_desc">Búsqueda Semántica ChromaDB (5-20ms)</span>
+              </div>
+              <div class="layer-status-icon" id="icon-2">-</div>
+            </div>
+            <div class="layer-detail" id="detail-2" data-i18n="waiting_request">En espera de petición...</div>
+            <div class="layer-latency" id="latency-2"></div>
+          </div>
+
+          <div class="layer-connector"></div>
+
+          <div class="layer-card idle" id="layer-3">
+            <div class="layer-header">
+              <div class="layer-badge">L3</div>
+              <div class="layer-info">
+                <span class="layer-name" data-i18n="l3_name">Capa 3: Inteligencia IA</span>
+                <span class="layer-desc" data-i18n="l3_desc">Transformer DeBERTa en CPU (Prompt Guard)</span>
+              </div>
+              <div class="layer-status-icon" id="icon-3">-</div>
+            </div>
+            <div class="layer-detail" id="detail-3" data-i18n="waiting_request">En espera de petición...</div>
+            <div class="layer-latency" id="latency-3"></div>
+          </div>
+
+          <div class="layer-connector"></div>
+
+          <div class="layer-card idle" id="layer-4">
+            <div class="layer-header">
+              <div class="layer-badge">L4</div>
+              <div class="layer-info">
+                <span class="layer-name" data-i18n="l4_name">Capa 4: Inyección de Canario</span>
+                <span class="layer-desc" data-i18n="l4_desc">Token Criptográfico de Alta Entropía</span>
+              </div>
+              <div class="layer-status-icon" id="icon-4">-</div>
+            </div>
+            <div class="layer-detail" id="detail-4" data-i18n="waiting_request">En espera de petición...</div>
+            <div class="layer-latency" id="latency-4"></div>
+          </div>
+
+          <div class="layer-connector"></div>
+
+          <div class="layer-card idle" id="layer-5">
+            <div class="layer-header">
+              <div class="layer-badge">L5</div>
+              <div class="layer-info">
+                <span class="layer-name" data-i18n="l5_name">Capa 5: Auditoría de Salida (Egress)</span>
+                <span class="layer-desc" data-i18n="l5_desc">Detección de Fuga de Canario / Contexto</span>
+              </div>
+              <div class="layer-status-icon" id="icon-5">-</div>
+            </div>
+            <div class="layer-detail" id="detail-5" data-i18n="waiting_request">En espera de petición...</div>
+            <div class="layer-latency" id="latency-5"></div>
+          </div>
+        </div>
+
+        <!-- Summary Bar -->
+        <div class="summary-bar" id="summary-bar">
+          <div class="summary-item">
+            <span class="summary-label" data-i18n="summary_latency">Latencia Total</span>
+            <span class="summary-value" id="total-latency">-</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label" data-i18n="summary_verdict">Veredicto</span>
+            <span class="summary-value" id="outcome-badge">-</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label" data-i18n="summary_canary">Canario</span>
+            <span class="summary-value" id="canary-status">-</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
