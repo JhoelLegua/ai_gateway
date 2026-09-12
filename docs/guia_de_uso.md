@@ -102,8 +102,9 @@ Para una presentación de alto impacto ante el jurado calificador:
 
 1. **Introducción y Contexto (1 min):**
    - Explicar por qué los LLMs en producción son vulnerables (*OWASP Top 10 for LLMs*: Prompt Injection, Sensitive Data Leakage).
-2. **Arquitectura en Profundidad (2 min):**
-   - Presentar el diseño de 5 capas: Heurística, Vectorial, Clasificador IA, Canarios e Inspección Egress.
+2. **Arquitectura y Modelado en Profundidad (2 min):**
+   - Abrir el **Explorador de Arquitectura** en **`http://localhost:8000/architecture`**.
+   - Mostrar los 7 diagramas interactivos: Componentes Clean Architecture, Pipeline de 5 capas, Diagrama de Secuencia temporal, Máquina de Estados de Canarios, Telemetría Telescope, Diseño del Sistema (ADRs) y Escalabilidad & Alta Disponibilidad (HPA).
 3. **Demostración en Vivo (3 min):**
    - Probar el contraste entre **Modo Bypass** (vulnerable) y **Modo Protegido** (blindado con telemetría en `/app/`).
    - Demostrar el monitor **Telescope** (`/telescope`) con flujo animado, tabla de percentiles P50/P95 y Stress-Lab en vivo.

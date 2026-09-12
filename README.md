@@ -100,6 +100,7 @@ python -m venv .venv
 # Linux / macOS
 python3 -m venv .venv
 source .venv/bin/activate
+source .venv/Scripts/activate
 ```
 
 #### 2. Install dependencies
@@ -258,16 +259,45 @@ ai_gateway/
 │   └── seed_attacks.json               # Seed dataset of known prompt injections
 ├── sql/
 │   └── create_tables.sql               # PostgreSQL DDL schema with triggers
-├── docs/                               # Engineering documentation
+├── docs/                               # Engineering & Thesis Documentation
+│   ├── archify/                        # Archify Interactive Diagram Suite (HTML/SVG)
+│   │   ├── index.html                  # Master architecture explorer hub
+│   │   ├── 01_componentes.html         # Component map & Clean Architecture
+│   │   ├── 02_flujo_pipeline.html      # 5-layer pipeline data flow
+│   │   ├── 03_secuencia_peticion.html  # Interactive sequence diagram
+│   │   ├── 04_maquina_estados.html     # FSM state machine & canary lifecycle
+│   │   ├── 05_telescope_observabilidad.html # Telescope telemetry pipeline
+│   │   └── specs/                      # Official Archify typed JSON IR specs
 │   ├── arquitectura.md                 # Architecture design & data flow
 │   ├── especificacion_tecnica.md       # Technical engineering specification
 │   ├── guia_de_uso.md                  # Step-by-step user and demo guide
+│   ├── marco_teorico_metodologico_tesis.md # Academic theoretical & methodological thesis framework
 │   └── reporte_utilidad_ai_gateway.md  # Strategic utility & ROI report
-├── tests/                              # Pytest test suite
+├── tests/                              # Pytest test suite (47 automated tests)
+├── .agents/skills/archify/             # Official Archify agent skill
 ├── .env.example                        # Environment variables template
 ├── requirements.txt                    # Python dependencies
 └── setup.sh                            # Automated setup script
 ```
+
+---
+
+## Interactive Architecture Diagram Suite
+
+This repository includes a complete interactive architecture diagram suite with self-contained HTML5 + inline SVG maps, dark/light theme switcher, real-time packet animations, dependency reach tracing, and component inspection drawer:
+
+| Architecture Diagram | Specification File | Self-Contained Interactive Viewer | Server Mount URL |
+| :--- | :--- | :--- | :--- |
+| **01. Components & Clean Arch** | [`01_componentes.archify.json`](file:///d:/Limberth/ai_gateway/docs/archify/specs/01_componentes.archify.json) | [`01_componentes.html`](file:///d:/Limberth/ai_gateway/docs/archify/01_componentes.html) | `http://localhost:8000/archify/01_componentes.html` |
+| **02. Pipeline & Data Flow** | [`02_flujo_pipeline.archify.json`](file:///d:/Limberth/ai_gateway/docs/archify/specs/02_flujo_pipeline.archify.json) | [`02_flujo_pipeline.html`](file:///d:/Limberth/ai_gateway/docs/archify/02_flujo_pipeline.html) | `http://localhost:8000/archify/02_flujo_pipeline.html` |
+| **03. Sequence Trace** | [`03_secuencia_peticion.archify.json`](file:///d:/Limberth/ai_gateway/docs/archify/specs/03_secuencia_peticion.archify.json) | [`03_secuencia_peticion.html`](file:///d:/Limberth/ai_gateway/docs/archify/03_secuencia_peticion.html) | `http://localhost:8000/archify/03_secuencia_peticion.html` |
+| **04. State Machine (FSM)** | [`04_maquina_estados.archify.json`](file:///d:/Limberth/ai_gateway/docs/archify/specs/04_maquina_estados.archify.json) | [`04_maquina_estados.html`](file:///d:/Limberth/ai_gateway/docs/archify/04_maquina_estados.html) | `http://localhost:8000/archify/04_maquina_estados.html` |
+| **05. Telescope & Telemetry** | [`05_telescope_observabilidad.archify.json`](file:///d:/Limberth/ai_gateway/docs/archify/specs/05_telescope_observabilidad.archify.json) | [`05_telescope_observabilidad.html`](file:///d:/Limberth/ai_gateway/docs/archify/05_telescope_observabilidad.html) | `http://localhost:8000/archify/05_telescope_observabilidad.html` |
+| **06. System Design & ADRs** | [`06_diseno_sistema.archify.json`](file:///d:/Limberth/ai_gateway/docs/archify/specs/06_diseno_sistema.archify.json) | [`06_diseno_sistema.html`](file:///d:/Limberth/ai_gateway/docs/archify/06_diseno_sistema.html) | `http://localhost:8000/archify/06_diseno_sistema.html` |
+| **07. Scalability & HA** | [`07_escalabilidad_alta_disponibilidad.archify.json`](file:///d:/Limberth/ai_gateway/docs/archify/specs/07_escalabilidad_alta_disponibilidad.archify.json) | [`07_escalabilidad_alta_disponibilidad.html`](file:///d:/Limberth/ai_gateway/docs/archify/07_escalabilidad_alta_disponibilidad.html) | `http://localhost:8000/archify/07_escalabilidad_alta_disponibilidad.html` |
+| **Master Architecture Hub** | *Specification Aggregator* | [`index.html`](file:///d:/Limberth/ai_gateway/docs/archify/index.html) | **`http://localhost:8000/architecture`** |
+
+> **Offline-ready**: All HTML diagrams are standalone and require no external internet access or CDN dependencies. You can double-click them in your file manager or export them as vector SVGs for inclusion into thesis documents and presentations.
 
 ---
 

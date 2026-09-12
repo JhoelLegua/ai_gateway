@@ -1,0 +1,54 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tt-a1i/archify/main/schemas/dataflow.schema.json",
+  "meta": {
+    "title": "AI Gateway - Pipeline de Inspección y Flujo de Datos (5 Capas)",
+    "description": "Recorrido determinista del flujo de datos desde el Ingress del prompt hasta el Egress hacia el cliente",
+    "version": "2.17.0",
+    "type": "dataflow",
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    {
+      "id": "stage-ingress",
+      "title": "Fase 1: Ingress & Heurística (L1)",
+      "steps": [
+        { "id": "step-http-ingress", "label": "Petición HTTP POST /chat", "latency": "< 1ms" },
+        { "id": "step-normalization", "label": "Normalización Unicode NFC", "latency": "< 0.5ms" },
+        { "id": "step-l1-eval", "label": "L1: Regex Jailbreak & Shannon Entropy", "latency": "< 5ms", "fail_action": "HTTP 403 (BLOCKED_L1)" }
+      ]
+    },
+    {
+      "id": "stage-vectorial",
+      "title": "Fase 2: Similitud Semántica (L2)",
+      "steps": [
+        { "id": "step-embedding", "label": "Embedding denso all-MiniLM-L6-v2", "latency": "15-30ms" },
+        { "id": "step-chroma-query", "label": "Consulta de distancia coseno ChromaDB", "latency": "10-20ms", "fail_action": "HTTP 403 (BLOCKED_L2)" }
+      ]
+    },
+    {
+      "id": "stage-intelligence",
+      "title": "Fase 3: Inteligencia Defensiva (L3)",
+      "steps": [
+        { "id": "step-l3-classifier", "label": "Evaluador LLM Llama-3.1-8b JSON", "latency": "140-260ms" },
+        { "id": "step-auto-learning", "label": "Bucle Inmunidad Adaptativa -> ChromaDB", "type": "feedback" }
+      ]
+    },
+    {
+      "id": "stage-canary-llm",
+      "title": "Fase 4: Inyección Canario & Inferencia",
+      "steps": [
+        { "id": "step-l4-canary", "label": "Inyección UUIDv4 en delimitador sistema", "latency": "< 1ms" },
+        { "id": "step-groq-inference", "label": "Inferencia Externa Groq Llama-3.3-70b", "latency": "200-600ms" }
+      ]
+    },
+    {
+      "id": "stage-egress",
+      "title": "Fase 5: Egreso, PII y Entrega (L5)",
+      "steps": [
+        { "id": "step-canary-scan", "label": "Verificación de No-Fuga de Canario", "fail_action": "Cuarentena + Alerta Brevo SMTP" },
+        { "id": "step-pii-scrub", "label": "Anonimización de emails, API keys, DNI", "latency": "< 5ms" },
+        { "id": "step-dispatch", "label": "Despacho HTTP 200 OK al Cliente", "status": "CLEAN" }
+      ]
+    }
+  ]
+}

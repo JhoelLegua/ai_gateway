@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Gateway - 06. Diseño Arquitectónico y Patrones de Software</title>
+  <link rel="stylesheet" href="archify.css">
+  <style>
+    .cluster-box {
+      fill: var(--bg-secondary);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      stroke-dasharray: 4, 4;
+      rx: 10;
+    }
+    .cluster-label {
+      font-size: 11px;
+      font-weight: 700;
+      fill: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .node-box {
+      fill: var(--bg-card);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      rx: 8;
+      transition: var(--transition);
+    }
+    .node-title {
+      font-size: 12px;
+      font-weight: 600;
+      fill: var(--text-primary);
+    }
+    .node-sub {
+      font-size: 10px;
+      fill: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+    .badge-rect {
+      rx: 3;
+    }
+    .badge-text {
+      font-size: 9px;
+      font-weight: 700;
+      fill: #ffffff;
+      text-anchor: middle;
+    }
+  </style>
+</head>
+<body>
+  <header class="archify-header">
+    <div class="archify-branding">
+      <span class="archify-badge">AI GATEWAY</span>
+      <span class="archify-title">06. Diseño Arquitectónico Global y Patrones de Software</span>
+      <span class="archify-subtitle">Clean Architecture, ADRs y Límites de Confianza</span>
+    </div>
+    <div class="archify-controls">
+      <a href="index.html" target="_top" class="archify-btn btn-hub">← Hub Principal</a>
+      <button id="theme-toggle" class="archify-btn">Modo Claro</button>
+    </div>
+  </header>
+
+  <main class="archify-workspace">
+    <div class="archify-canvas-container">
+      <svg class="archify-svg" viewBox="0 0 1550 900" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+          </marker>
+          <marker id="arrow-rose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+          </marker>
+          <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b" />
+          </marker>
+        </defs>
+
+        <g id="viewport">
+          <!-- CLUSTER 1: SEGURIDAD Y ENTRADA (LÍMITE PERIMETRAL EXTERNO) -->
+          <g id="cluster-boundary">
+            <rect class="cluster-box" x="40" y="40" width="300" height="820" />
+            <text class="cluster-label" x="60" y="70">1. Límite de Confianza y RBAC</text>
+
+            <!-- Node: Client Request -->
+            <g id="design-client-app" class="node-group" transform="translate(60, 100)">
+              <rect class="node-box" width="260" height="80" stroke="#3b82f6" />
+              <rect class="badge-rect" x="12" y="12" width="55" height="16" fill="#3b82f6" />
+              <text class="badge-text" x="39" y="24">CLIENT</text>
+              <text class="node-title" x="12" y="48">Aplicación Consumidora</text>
+              <text class="node-sub" x="12" y="66">Bearer Token de Cliente (SHA-256)</text>
+            </g>
+
+            <!-- Node: Admin Request -->
+            <g id="design-admin-user" class="node-group" transform="translate(60, 220)">
+              <rect class="node-box" width="260" height="80" stroke="#a855f7" />
+              <rect class="badge-rect" x="12" y="12" width="55" height="16" fill="#a855f7" />
+              <text class="badge-text" x="39" y="24">ADMIN</text>
+              <text class="node-title" x="12" y="48">Oficial SOC / Auditor HITL</text>
+              <text class="node-sub" x="12" y="66">Bearer Token de Admin (SHA-256)</text>
+            </g>
+
+            <!-- Node: RBAC Constant Time Guard -->
+            <g id="design-rbac-guard" class="node-group" transform="translate(60, 350)">
+              <rect class="node-box" width="260" height="90" stroke="#10b981" />
+              <rect class="badge-rect" x="12" y="12" width="60" height="16" fill="#10b981" />
+              <text class="badge-text" x="42" y="24">SECURITY</text>
+              <text class="node-title" x="12" y="48">Guardian RBAC en Tiempo Constante</text>
+              <text class="node-sub" x="12" y="66">secrets.compare_digest()</text>
+              <text class="node-sub" x="12" y="80" fill="#10b981">Protección Timing Attacks O(1)</text>
+            </g>
+
+            <!-- Node: Architecture Decision Badge -->
+            <g id="design-adr-overview" class="node-group" transform="translate(60, 500)">
+              <rect class="node-box" width="260" height="150" />
+              <rect class="badge-rect" x="12" y="12" width="45" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="34" y="24">ADRs</text>
+              <text class="node-title" x="12" y="48">Decisiones Fundacionales</text>
+              <text class="node-sub" x="12" y="70" fill="#38bdf8">• ADR-01: Fast-Fail Short-Circuit</text>
+              <text class="node-sub" x="12" y="90" fill="#10b981">• ADR-02: ChromaDB HNSW Local</text>
+              <text class="node-sub" x="12" y="110" fill="#a855f7">• ADR-03: Canarios Esteganográficos</text>
+              <text class="node-sub" x="12" y="130" fill="#f43f5e">• ADR-04: Ring Buffer sin Bloqueo</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER 2: CAPA DE APLICACIÓN Y PATRONES TÁCTICOS -->
+          <g id="cluster-application">
+            <rect class="cluster-box" x="380" y="40" width="340" height="820" />
+            <text class="cluster-label" x="400" y="70">2. Capa de Aplicación & Patrones GoF</text>
+
+            <!-- Node: Factory & Lifespan -->
+            <g id="design-app-factory" class="node-group" transform="translate(400, 100)">
+              <rect class="node-box" width="300" height="85" stroke="#38bdf8" />
+              <rect class="badge-rect" x="12" y="12" width="65" height="16" fill="#38bdf8" />
+              <text class="badge-text" x="44" y="24">FACTORY</text>
+              <text class="node-title" x="12" y="48">create_app() & Lifespan Context</text>
+              <text class="node-sub" x="12" y="66">app/main.py (Config, Pool HTTP, DB)</text>
+            </g>
+
+            <!-- Node: Chain of Responsibility -->
+            <g id="design-chain-pattern" class="node-group" transform="translate(400, 230)">
+              <rect class="node-box" width="300" height="95" stroke="#a855f7" />
+              <rect class="badge-rect" x="12" y="12" width="90" height="16" fill="#a855f7" />
+              <text class="badge-text" x="57" y="24">GOF: CHAIN</text>
+              <text class="node-title" x="12" y="48">Chain of Responsibility (Pipeline)</text>
+              <text class="node-sub" x="12" y="66">app/core/pipeline/manager.py</text>
+              <text class="node-sub" x="12" y="82" fill="#38bdf8">Evaluación secuencial con fast-exit</text>
+            </g>
+
+            <!-- Node: Proxy / Adapter Pattern -->
+            <g id="design-adapter-pattern" class="node-group" transform="translate(400, 380)">
+              <rect class="node-box" width="300" height="95" stroke="#3b82f6" />
+              <rect class="badge-rect" x="12" y="12" width="95" height="16" fill="#3b82f6" />
+              <text class="badge-text" x="59" y="24">GOF: ADAPTER</text>
+              <text class="node-title" x="12" y="48">Reverse Proxy / Provider Adapter</text>
+              <text class="node-sub" x="12" y="66">app/services/llm_client.py</text>
+              <text class="node-sub" x="12" y="82" fill="#10b981">Desacopla API OpenAI / Groq Cloud</text>
+            </g>
+
+            <!-- Node: Singleton Pattern -->
+            <g id="design-singleton-pattern" class="node-group" transform="translate(400, 530)">
+              <rect class="node-box" width="300" height="95" stroke="#f59e0b" />
+              <rect class="badge-rect" x="12" y="12" width="105" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="64" y="24">GOF: SINGLETON</text>
+              <text class="node-title" x="12" y="48">Singleton Managers & Deque</text>
+              <text class="node-sub" x="12" y="66">get_settings() / MetricsCollector</text>
+              <text class="node-sub" x="12" y="82" fill="#f59e0b">Instancia única thread-safe en memoria</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER 3: CAPA DE DOMINIO (INSPECCIÓN MULTI-CAPA) -->
+          <g id="cluster-domain">
+            <rect class="cluster-box" x="760" y="40" width="370" height="820" />
+            <text class="cluster-label" x="780" y="70">3. Capa de Dominio (Núcleo de Defensa)</text>
+
+            <!-- L1: Heuristic -->
+            <g id="design-l1-domain" class="node-group" transform="translate(780, 100)">
+              <rect class="node-box" width="330" height="75" stroke="#f43f5e" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="22">CAPA L1</text>
+              <text class="node-title" x="12" y="44">Filtro Heurístico y Entropía Shannon</text>
+              <text class="node-sub" x="12" y="62">Reglas regex precompiladas (0 tokens, &lt;1ms)</text>
+            </g>
+
+            <!-- L2: Vectorial -->
+            <g id="design-l2-domain" class="node-group" transform="translate(780, 200)">
+              <rect class="node-box" width="330" height="75" stroke="#10b981" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#10b981" />
+              <text class="badge-text" x="44" y="22">CAPA L2</text>
+              <text class="node-title" x="12" y="44">Proyección Semántica y Coseno HNSW</text>
+              <text class="node-sub" x="12" y="62">Incrustaciones densas all-MiniLM (5-20ms)</text>
+            </g>
+
+            <!-- L3: Neural Classifier -->
+            <g id="design-l3-domain" class="node-group" transform="translate(780, 300)">
+              <rect class="node-box" width="330" height="75" stroke="#f59e0b" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="44" y="22">CAPA L3</text>
+              <text class="node-title" x="12" y="44">Clasificador Neuronal DeBERTa-v3 / Guard</text>
+              <text class="node-sub" x="12" y="62">Razonamiento de intención latente (25-60ms)</text>
+            </g>
+
+            <!-- L4: Cryptographic Canary -->
+            <g id="design-l4-domain" class="node-group" transform="translate(780, 400)">
+              <rect class="node-box" width="330" height="75" stroke="#a855f7" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#a855f7" />
+              <text class="badge-text" x="44" y="22">CAPA L4</text>
+              <text class="node-title" x="12" y="44">Esteganografía de Canarios UUIDv4</text>
+              <text class="node-sub" x="12" y="62">Inyección determinista en delimitador (&lt;1ms)</text>
+            </g>
+
+            <!-- L5: Egress & PII -->
+            <g id="design-l5-domain" class="node-group" transform="translate(780, 500)">
+              <rect class="node-box" width="330" height="75" stroke="#f43f5e" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="22">CAPA L5</text>
+              <text class="node-title" x="12" y="44">Auditoría Egress y Redactor de PII</text>
+              <text class="node-sub" x="12" y="62">Verificación de fuga de canario y regex PII</text>
+            </g>
+
+            <!-- Feedback Loop Node -->
+            <g id="design-feedback-loop" class="node-group" transform="translate(780, 620)">
+              <rect class="node-box" width="330" height="85" stroke="#10b981" />
+              <rect class="badge-rect" x="12" y="10" width="115" height="16" fill="#10b981" />
+              <text class="badge-text" x="69" y="22">INMUNIDAD ACTIVA</text>
+              <text class="node-title" x="12" y="44">Bucle de Auto-aprendizaje Continuo</text>
+              <text class="node-sub" x="12" y="62">Ataques L3/L5 se inyectan en disco a ChromaDB</text>
+              <text class="node-sub" x="12" y="76" fill="#10b981">Auto-endurecimiento permanente</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER 4: INFRAESTRUCTURA Y SERVICIOS EXTERNOS -->
+          <g id="cluster-infra">
+            <rect class="cluster-box" x="1170" y="40" width="340" height="820" />
+            <text class="cluster-label" x="1190" y="70">4. Infraestructura & Repositorios</text>
+
+            <!-- Groq LPU -->
+            <g id="design-groq-node" class="node-group" transform="translate(1190, 100)">
+              <rect class="node-box" width="300" height="80" stroke="#3b82f6" />
+              <rect class="badge-rect" x="12" y="12" width="65" height="16" fill="#3b82f6" />
+              <text class="badge-text" x="44" y="24">PROVIDER</text>
+              <text class="node-title" x="12" y="48">Groq Cloud LLM (Aceleración LPU)</text>
+              <text class="node-sub" x="12" y="66">Llama-3.3-70b / Llama-3.1-8b</text>
+            </g>
+
+            <!-- ChromaDB -->
+            <g id="design-chroma-node" class="node-group" transform="translate(1190, 220)">
+              <rect class="node-box" width="300" height="80" stroke="#10b981" />
+              <rect class="badge-rect" x="12" y="12" width="75" height="16" fill="#10b981" />
+              <text class="badge-text" x="49" y="24">VECTOR DB</text>
+              <text class="node-title" x="12" y="48">ChromaDB Persistente en Disco</text>
+              <text class="node-sub" x="12" y="66">Índice HNSW local de 384 dimensiones</text>
+            </g>
+
+            <!-- PostgreSQL -->
+            <g id="design-postgres-node" class="node-group" transform="translate(1190, 340)">
+              <rect class="node-box" width="300" height="85" stroke="#a855f7" />
+              <rect class="badge-rect" x="12" y="12" width="85" height="16" fill="#a855f7" />
+              <text class="badge-text" x="54" y="24">REPOSITORY</text>
+              <text class="node-title" x="12" y="48">PostgreSQL (SQLAlchemy Async)</text>
+              <text class="node-sub" x="12" y="66">prompt_audit_dataset (HITL)</text>
+              <text class="node-sub" x="12" y="80">users_notification (Destinatarios SOC)</text>
+            </g>
+
+            <!-- Brevo SMTP -->
+            <g id="design-brevo-node" class="node-group" transform="translate(1190, 460)">
+              <rect class="node-box" width="300" height="80" stroke="#f43f5e" />
+              <rect class="badge-rect" x="12" y="12" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="24">ALERTING</text>
+              <text class="node-title" x="12" y="48">Brevo Transactional SMTP</text>
+              <text class="node-sub" x="12" y="66">Disparo asíncrono no bloqueante</text>
+            </g>
+
+            <!-- Telescope Collector -->
+            <g id="design-telescope-node" class="node-group" transform="translate(1190, 580)">
+              <rect class="node-box" width="300" height="85" stroke="#f59e0b" />
+              <rect class="badge-rect" x="12" y="12" width="80" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="52" y="24">TELEMETRÍA</text>
+              <text class="node-title" x="12" y="48">Telescope In-Memory Ring Buffer</text>
+              <text class="node-sub" x="12" y="66">collections.deque(maxlen=1000)</text>
+              <text class="node-sub" x="12" y="80" fill="#f59e0b">Percentiles rodantes P50/P95/P99</text>
+            </g>
+          </g>
+
+          <!-- EDGES AND ARCHITECTURAL DEPENDENCY FLOWS -->
+          <g id="design-edges">
+            <!-- Client -> RBAC -->
+            <path class="edge-line animated-packet" data-from="design-client-app" data-to="design-rbac-guard" d="M 190 180 L 190 350" marker-end="url(#arrow)" />
+
+            <!-- Admin -> RBAC -->
+            <path class="edge-line animated-packet" data-from="design-admin-user" data-to="design-rbac-guard" d="M 190 300 L 190 350" marker-end="url(#arrow)" />
+
+            <!-- RBAC -> App Factory / Routers -->
+            <path class="edge-line animated-packet" data-from="design-rbac-guard" data-to="design-app-factory" d="M 320 395 Q 360 395 360 142 L 400 142" marker-end="url(#arrow)" />
+
+            <!-- App Factory -> Chain Orchestrator -->
+            <path class="edge-line animated-packet" data-from="design-app-factory" data-to="design-chain-pattern" d="M 550 185 L 550 230" marker-end="url(#arrow)" />
+
+            <!-- Chain Orchestrator -> L1 -->
+            <path class="edge-line animated-packet" data-from="design-chain-pattern" data-to="design-l1-domain" d="M 700 277 Q 740 277 740 137 L 780 137" marker-end="url(#arrow)" />
+
+            <!-- L1 -> L2 -->
+            <path class="edge-line animated-packet" data-from="design-l1-domain" data-to="design-l2-domain" d="M 945 175 L 945 200" marker-end="url(#arrow)" />
+
+            <!-- L2 -> L3 -->
+            <path class="edge-line animated-packet" data-from="design-l2-domain" data-to="design-l3-domain" d="M 945 275 L 945 300" marker-end="url(#arrow)" />
+
+            <!-- L3 -> L4 -->
+            <path class="edge-line animated-packet" data-from="design-l3-domain" data-to="design-l4-domain" d="M 945 375 L 945 400" marker-end="url(#arrow)" />
+
+            <!-- L4 -> Adapter -> Groq -->
+            <path class="edge-line animated-packet" data-from="design-l4-domain" data-to="design-adapter-pattern" d="M 780 437 Q 740 437 740 427 L 700 427" marker-end="url(#arrow)" />
+            <path class="edge-line animated-packet-fast" data-from="design-adapter-pattern" data-to="design-groq-node" d="M 700 437 Q 950 437 950 140 L 1190 140" marker-end="url(#arrow)" />
+
+            <!-- Groq -> L5 -->
+            <path class="edge-line animated-packet" data-from="design-groq-node" data-to="design-l5-domain" d="M 1340 180 Q 1340 537 1110 537" marker-end="url(#arrow)" />
+
+            <!-- L5 Leak -> Brevo Alert -->
+            <path class="edge-line-danger animated-packet-danger" data-from="design-l5-domain" data-to="design-brevo-node" d="M 1110 520 Q 1150 520 1150 500 L 1190 500" marker-end="url(#arrow-rose)" />
+
+            <!-- L3/L5 Attack -> Feedback Loop -->
+            <path class="edge-line" data-from="design-l3-domain" data-to="design-feedback-loop" d="M 1110 337 Q 1140 337 1140 662 L 1110 662" marker-end="url(#arrow-emerald)" stroke="#10b981" />
+
+            <!-- Feedback Loop -> ChromaDB Insert -->
+            <path class="edge-line animated-packet" data-from="design-feedback-loop" data-to="design-chroma-node" d="M 1110 650 Q 1160 650 1160 260 L 1190 260" marker-end="url(#arrow-emerald)" stroke="#10b981" />
+
+            <!-- Pipeline -> PostgreSQL Repository (Audit) -->
+            <path class="edge-line" data-from="design-chain-pattern" data-to="design-postgres-node" d="M 550 325 Q 550 382 1190 382" marker-end="url(#arrow)" stroke-dasharray="4, 4" />
+
+            <!-- Pipeline -> Telescope Singleton Metrics -->
+            <path class="edge-line" data-from="design-chain-pattern" data-to="design-telescope-node" d="M 550 325 Q 550 622 1190 622" marker-end="url(#arrow-amber)" stroke="#f59e0b" />
+          </g>
+        </g>
+      </svg>
+
+      <div class="archify-hud">
+        <button id="btn-zoom-in" class="hud-btn">+</button>
+        <button id="btn-zoom-out" class="hud-btn">−</button>
+        <button id="btn-reset" class="hud-btn">⟲</button>
+      </div>
+    </div>
+
+    <!-- Drawer -->
+    <aside id="archify-drawer" class="archify-drawer">
+      <div class="drawer-header">
+        <h3 id="drawer-node-title" class="drawer-title">Detalle Arquitectónico</h3>
+        <button id="drawer-close" class="drawer-close">✕</button>
+      </div>
+      <div id="drawer-node-body" class="drawer-content"></div>
+    </aside>
+  </main>
+
+  <script src="archify.js"></script>
+  <script>
+    const metadataStore = {
+      'design-client-app': {
+        title: 'Aplicación Consumidora (Client Trust Boundary)',
+        file: 'Frontend / API Consumer',
+        description: 'Actor no confiable que consume el servicio de inferencia. Autenticado mediante Bearer Token evaluado contra hashes SHA-256 preconfigurados.',
+        io: 'Input: ChatRequest { message, history } -> Output: ChatResponse'
+      },
+      'design-admin-user': {
+        title: 'Oficial SOC / Auditor HITL (Admin Trust Boundary)',
+        file: 'SOC Interface / Audit Management',
+        description: 'Actor con privilegios administrativos para consultar datasets de auditoría, etiquetar prompts para fine-tuning y gestionar destinatarios de alertas.',
+        io: 'Operaciones CRUD sobre /v1/notifications y /v1/audit'
+      },
+      'design-rbac-guard': {
+        title: 'Guardián RBAC Criptográfico O(1)',
+        file: 'app/core/security.py',
+        description: 'Implementa secrets.compare_digest() para mitigar ataques de tiempo (Timing Attacks). Desacopla permisos de cliente frente a operaciones administrativas críticas.',
+        latency: '< 0.05 ms'
+      },
+      'design-adr-overview': {
+        title: 'Registros de Decisiones de Arquitectura (ADRs)',
+        file: 'docs/arquitectura.md',
+        description: 'ADR-01: Cortocircuito temprano para ahorro de tokens. ADR-02: Base vectorial ChromaDB integrada para eliminar saltos de red. ADR-03: Canarios esteganográficos para verificación matemática de salida. ADR-04: Ring buffer en memoria O(1) para telemetría sin degradar I/O.',
+        mitre: 'Marco Metodológico Formal de Ingeniería de Software'
+      },
+      'design-app-factory': {
+        title: 'Application Factory & Lifespan',
+        file: 'app/main.py',
+        description: 'Patrón Factory que inicializa el ciclo de vida ASGI. Gestiona el pool HTTP asíncrono hacia Groq Cloud, precalienta modelos neuronales en RAM e inicializa esquemas de base de datos.',
+        latency: 'Ejecución única en startup'
+      },
+      'design-chain-pattern': {
+        title: 'Patrón GoF: Chain of Responsibility',
+        file: 'app/core/pipeline/manager.py',
+        description: 'Encadena de forma desacoplada las capas de inspección L1 a L5. Cada capa decide autónomamente si permite el paso (pass), sanitiza el contenido (sanitize) o detiene el flujo (fast-fail exit).',
+        failureMode: 'Corte inmediato en la primera capa que detecte anomalía.'
+      },
+      'design-adapter-pattern': {
+        title: 'Patrón GoF: Adapter / Proxy',
+        file: 'app/services/llm_client.py',
+        description: 'Aísla al núcleo de la aplicación de la API propietaria de Groq Cloud. Si el proveedor cambia o se agrega un modelo local (e.g. vLLM u Ollama), solo se actualiza el adaptador sin alterar el pipeline.',
+        io: 'Adaptación de esquemas Pydantic a payloads OpenAI-compatible'
+      },
+      'design-singleton-pattern': {
+        title: 'Patrón GoF: Singleton',
+        file: 'app/core/config.py & app/services/metrics.py',
+        description: 'Garantiza que la configuración inmutable del sistema (.env) y el recopilador atómico de telemetría tengan una única instancia compartida entre todos los workers y corrutinas de FastAPI.',
+        latency: 'Acceso en RAM sin sobrecarga'
+      },
+      'design-l1-domain': {
+        title: 'Capa L1: Heurística & Entropía Shannon',
+        file: 'app/core/pipeline/layer_1_heuristics.py',
+        description: 'Filtro ultrarrápido sin consumo de tokens. Bloquea firmas estáticas de Jailbreak y payloads ofuscados con entropía > 4.8 bits/byte.',
+        latency: '< 1 ms',
+        mitre: 'AML.T0051 (Prompt Injection)'
+      },
+      'design-l2-domain': {
+        title: 'Capa L2: Proyección Semántica & Coseno HNSW',
+        file: 'app/core/pipeline/layer_2_vectorial.py',
+        description: 'Convierte el prompt en un vector denso de 384 dimensiones y consulta el índice HNSW local en ChromaDB. Detecta ataques parafraseados.',
+        latency: '5 - 20 ms',
+        mitre: 'AML.T0054 (Jailbreak Semántico)'
+      },
+      'design-l3-domain': {
+        title: 'Capa L3: Clasificador Neuronal Transformer',
+        file: 'app/core/pipeline/layer_3_intelligence.py',
+        description: 'Red neuronal de clasificación profunda en CPU. Evalúa la intención latente del usuario identificando técnicas avanzadas de ingeniería social y juegos de rol.',
+        latency: '25 - 60 ms'
+      },
+      'design-l4-domain': {
+        title: 'Capa L4: Esteganografía de Canarios UUIDv4',
+        file: 'app/core/pipeline/layer_4_canary.py',
+        description: 'Inyecta un marcador secreto único e invisible al usuario dentro de los delimitadores de sistema del LLM.',
+        latency: '< 1 ms'
+      },
+      'design-l5-domain': {
+        title: 'Capa L5: Auditoría Egress y Redactor de PII',
+        file: 'app/core/pipeline/layer_5_egress.py',
+        description: 'Inspecciona la respuesta del LLM antes del despacho. Certifica que el token canario no se haya filtrado y anonimiza información personal (PII).',
+        latency: '< 2 ms',
+        mitre: 'OWASP LLM06 (Sensitive Information Disclosure)'
+      },
+      'design-feedback-loop': {
+        title: 'Bucle de Inmunidad Adaptativa',
+        file: 'app/services/vector_db.py',
+        description: 'Mecanismo de auto-endurecimiento: cuando L3 o L5 detectan un ataque de día cero, se vectoriza y se persiste en ChromaDB. Los futuros intentos son bloqueados en L2 (< 20ms) sin pasar por modelos neuronales pesados.',
+        mitre: 'Auto-aprendizaje Perimetral'
+      },
+      'design-groq-node': {
+        title: 'Groq Cloud LLM (Inferencia)',
+        file: 'api.groq.com',
+        description: 'Proveedor externo de inferencia ultrarrápida mediante aceleradores LPU. Ejecuta Llama-3.3-70b-versatile.'
+      },
+      'design-chroma-node': {
+        title: 'ChromaDB Local Persistente',
+        file: 'data/chroma/',
+        description: 'Almacén vectorial en disco con índice HNSW. Elimina la latencia de red de proveedores externos.'
+      },
+      'design-postgres-node': {
+        title: 'PostgreSQL (Patrón Repository)',
+        file: 'app/db/session.py & models.py',
+        description: 'Repositorio relacional inmutable. Almacena el historial de auditoría prompt_audit_dataset y los oficiales SOC users_notification.',
+        io: 'SQLAlchemy Async Engine con asyncpg'
+      },
+      'design-brevo-node': {
+        title: 'Brevo Transactional SMTP',
+        file: 'app/services/email_notifier.py',
+        description: 'Servicio de despacho de alertas a los oficiales SOC activos cuando se detecta fuga de canario o eventos críticos de seguridad.'
+      },
+      'design-telescope-node': {
+        title: 'Telescope Ring Buffer en Memoria',
+        file: 'app/services/metrics.py',
+        description: 'Búfer circular de tamaño fijo que almacena los últimos 1000 eventos. Permite cálculo O(1) de percentiles P50, P95 y P99 en tiempo real.',
+        latency: '< 0.05 ms overhead'
+      }
+    };
+
+    new ArchifyViewer({
+      metadataStore: metadataStore
+    });
+  </script>
+</body>
+</html>

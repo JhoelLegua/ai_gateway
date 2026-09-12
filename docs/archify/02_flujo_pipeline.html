@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Gateway - 02. Flujo de Datos y Pipeline de Inspección (5 Capas)</title>
+  <link rel="stylesheet" href="archify.css">
+  <style>
+    .stage-box {
+      fill: var(--bg-secondary);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      rx: 10;
+    }
+    .stage-label {
+      font-size: 11px;
+      font-weight: 700;
+      fill: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .node-box {
+      fill: var(--bg-card);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      rx: 8;
+      transition: var(--transition);
+    }
+    .decision-box {
+      fill: var(--bg-card);
+      stroke: var(--accent-amber);
+      stroke-width: 1.5;
+      rx: 6;
+      transition: var(--transition);
+    }
+    .block-box {
+      fill: rgba(244, 63, 94, 0.1);
+      stroke: var(--accent-rose);
+      stroke-width: 1.5;
+      rx: 6;
+    }
+    .node-title {
+      font-size: 12px;
+      font-weight: 600;
+      fill: var(--text-primary);
+    }
+    .node-sub {
+      font-size: 10px;
+      fill: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+    .decision-text {
+      font-size: 11px;
+      font-weight: 600;
+      fill: var(--accent-amber);
+      text-anchor: middle;
+    }
+    .block-text {
+      font-size: 11px;
+      font-weight: 700;
+      fill: var(--accent-rose);
+      text-anchor: middle;
+    }
+  </style>
+</head>
+<body>
+  <header class="archify-header">
+    <div class="archify-branding">
+      <span class="archify-badge">AI GATEWAY</span>
+      <span class="archify-title">02. Pipeline de Inspección y Flujo de Datos (5 Capas de Seguridad)</span>
+      <span class="archify-subtitle">Recorrido Perimetral Ingress / Egress</span>
+    </div>
+    <div class="archify-controls">
+      <a href="index.html" target="_top" class="archify-btn btn-hub">← Hub Principal</a>
+      <button id="theme-toggle" class="archify-btn">Modo Claro</button>
+    </div>
+  </header>
+
+  <main class="archify-workspace">
+    <div class="archify-canvas-container">
+      <svg class="archify-svg" viewBox="0 0 1600 950" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arrow-rose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+          </marker>
+          <marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+          </marker>
+        </defs>
+
+        <g id="viewport">
+          <!-- STAGE 1: INGRESS & L1 -->
+          <g id="stage-ingress">
+            <rect class="stage-box" x="40" y="40" width="280" height="860" />
+            <text class="stage-label" x="60" y="70">Fase 1: Entrada y Capa L1 (Heurística)</text>
+
+            <!-- User Ingress Node -->
+            <g id="flow-user-ingress" class="node-group" transform="translate(60, 100)">
+              <rect class="node-box" width="240" height="70" />
+              <text class="node-title" x="14" y="32">Petición HTTP Ingress</text>
+              <text class="node-sub" x="14" y="52">POST /api/v1/chat</text>
+            </g>
+
+            <!-- Normalization Node -->
+            <g id="flow-normalize" class="node-group" transform="translate(60, 210)">
+              <rect class="node-box" width="240" height="70" />
+              <text class="node-title" x="14" y="32">Normalizador de Texto</text>
+              <text class="node-sub" x="14" y="52">Strip whitespace, NFC unicode</text>
+            </g>
+
+            <!-- L1 Evaluator Node -->
+            <g id="flow-l1-eval" class="node-group" transform="translate(60, 320)">
+              <rect class="node-box" width="240" height="80" stroke="#f43f5e" />
+              <text class="node-title" x="14" y="32">L1: Reglas Regex & Entropía</text>
+              <text class="node-sub" x="14" y="50">Entropy &gt; 4.8 | YARA rules</text>
+              <text class="node-sub" x="14" y="66" fill="#38bdf8">Latencia: &lt; 5 ms (CPU)</text>
+            </g>
+
+            <!-- Decision L1 -->
+            <g id="flow-l1-decision" class="node-group" transform="translate(100, 440)">
+              <rect class="decision-box" width="160" height="50" />
+              <text class="decision-text" x="80" y="30">¿Firma detectada?</text>
+            </g>
+
+            <!-- Block L1 -->
+            <g id="flow-l1-block" class="node-group" transform="translate(60, 530)">
+              <rect class="block-box" width="240" height="60" />
+              <text class="block-text" x="120" y="35">BLOQUEO L1 (HTTP 403)</text>
+            </g>
+          </g>
+
+          <!-- STAGE 2: L2 VECTORIAL -->
+          <g id="stage-l2">
+            <rect class="stage-box" x="350" y="40" width="280" height="860" />
+            <text class="stage-label" x="370" y="70">Fase 2: Capa L2 (Semántica)</text>
+
+            <!-- Embedding Generation -->
+            <g id="flow-embedding" class="node-group" transform="translate(370, 320)">
+              <rect class="node-box" width="240" height="80" stroke="#10b981" />
+              <text class="node-title" x="14" y="32">L2: Embedding Vectorial</text>
+              <text class="node-sub" x="14" y="50">all-MiniLM-L6-v2 (384 dim)</text>
+              <text class="node-sub" x="14" y="66" fill="#10b981">ChromaDB Nearest Neighbors</text>
+            </g>
+
+            <!-- Decision L2 -->
+            <g id="flow-l2-decision" class="node-group" transform="translate(410, 440)">
+              <rect class="decision-box" width="160" height="50" />
+              <text class="decision-text" x="80" y="30">¿Distancia &lt; Umbral?</text>
+            </g>
+
+            <!-- Block L2 -->
+            <g id="flow-l2-block" class="node-group" transform="translate(370, 530)">
+              <rect class="block-box" width="240" height="60" />
+              <text class="block-text" x="120" y="35">BLOQUEO L2 (HTTP 403)</text>
+            </g>
+          </g>
+
+          <!-- STAGE 3: L3 INTELLIGENCE & AUTO-LEARNING -->
+          <g id="stage-l3">
+            <rect class="stage-box" x="660" y="40" width="280" height="860" />
+            <text class="stage-label" x="680" y="70">Fase 3: Capa L3 (Razonamiento)</text>
+
+            <!-- L3 Evaluator -->
+            <g id="flow-l3-eval" class="node-group" transform="translate(680, 320)">
+              <rect class="node-box" width="240" height="80" stroke="#f59e0b" />
+              <text class="node-title" x="14" y="32">L3: Clasificador Defensivo</text>
+              <text class="node-sub" x="14" y="50">Llama-3.1-8b JSON guard</text>
+              <text class="node-sub" x="14" y="66" fill="#f59e0b">Análisis de intención semántica</text>
+            </g>
+
+            <!-- Decision L3 -->
+            <g id="flow-l3-decision" class="node-group" transform="translate(720, 440)">
+              <rect class="decision-box" width="160" height="50" />
+              <text class="decision-text" x="80" y="30">¿Intención maliciosa?</text>
+            </g>
+
+            <!-- Block L3 -->
+            <g id="flow-l3-block" class="node-group" transform="translate(680, 530)">
+              <rect class="block-box" width="240" height="60" />
+              <text class="block-text" x="120" y="35">BLOQUEO L3 (HTTP 403)</text>
+            </g>
+
+            <!-- Auto-learning Feedback Node -->
+            <g id="flow-auto-learning" class="node-group" transform="translate(680, 640)">
+              <rect class="node-box" width="240" height="75" stroke="#10b981" />
+              <text class="node-title" x="14" y="32">Inmunidad Adaptativa</text>
+              <text class="node-sub" x="14" y="50">Vectorización e inserción</text>
+              <text class="node-sub" x="14" y="66" fill="#10b981">Auto-retroalimenta L2 Chroma</text>
+            </g>
+          </g>
+
+          <!-- STAGE 4: L4 CANARY & EXTERNAL LLM -->
+          <g id="stage-l4">
+            <rect class="stage-box" x="970" y="40" width="280" height="860" />
+            <text class="stage-label" x="990" y="70">Fase 4: L4 Canarios & Modelo</text>
+
+            <!-- L4 Canary Injection -->
+            <g id="flow-l4-canary" class="node-group" transform="translate(990, 320)">
+              <rect class="node-box" width="240" height="80" stroke="#a855f7" />
+              <text class="node-title" x="14" y="32">L4: Inyección Canario</text>
+              <text class="node-sub" x="14" y="50">UUIDv4 secreto en sistema</text>
+              <text class="node-sub" x="14" y="66" fill="#a855f7">Trampa de fuga de prompt</text>
+            </g>
+
+            <!-- External LLM Forwarding -->
+            <g id="flow-external-llm" class="node-group" transform="translate(990, 440)">
+              <rect class="node-box" width="240" height="80" stroke="#3b82f6" />
+              <text class="node-title" x="14" y="32">Groq Cloud LLM</text>
+              <text class="node-sub" x="14" y="50">Llama-3.3-70b-versatile</text>
+              <text class="node-sub" x="14" y="66" fill="#3b82f6">Inferencia externa segura</text>
+            </g>
+
+            <!-- Raw Response Receiver -->
+            <g id="flow-llm-response" class="node-group" transform="translate(990, 560)">
+              <rect class="node-box" width="240" height="70" />
+              <text class="node-title" x="14" y="32">Respuesta Bruta Generada</text>
+              <text class="node-sub" x="14" y="50">Tokens de salida del LLM</text>
+            </g>
+          </g>
+
+          <!-- STAGE 5: L5 EGRESS & CLIENT DISPATCH -->
+          <g id="stage-l5">
+            <rect class="stage-box" x="1280" y="40" width="280" height="860" />
+            <text class="stage-label" x="1300" y="70">Fase 5: Capa L5 (Egreso & Entrega)</text>
+
+            <!-- L5 Evaluator -->
+            <g id="flow-l5-eval" class="node-group" transform="translate(1300, 320)">
+              <rect class="node-box" width="240" height="80" stroke="#f43f5e" />
+              <text class="node-title" x="14" y="32">L5: Inspección de Egreso</text>
+              <text class="node-sub" x="14" y="50">Canary Match & PII Redactor</text>
+              <text class="node-sub" x="14" y="66" fill="#38bdf8">Anonimización confidencial</text>
+            </g>
+
+            <!-- Decision L5 -->
+            <g id="flow-l5-decision" class="node-group" transform="translate(1340, 440)">
+              <rect class="decision-box" width="160" height="50" />
+              <text class="decision-text" x="80" y="30">¿Fuga de Canario?</text>
+            </g>
+
+            <!-- Canary Leak Alert -->
+            <g id="flow-l5-leak" class="node-group" transform="translate(1300, 530)">
+              <rect class="block-box" width="240" height="75" />
+              <text class="block-text" x="120" y="28">¡FUGA CRÍTICA DETECTADA!</text>
+              <text class="node-sub" x="25" y="48" fill="#f43f5e">Cuarentena de Incidente</text>
+              <text class="node-sub" x="25" y="64" fill="#f43f5e">Disparo SMTP Brevo Alert</text>
+            </g>
+
+            <!-- Final Client Delivery -->
+            <g id="flow-client-delivery" class="node-group" transform="translate(1300, 650)">
+              <rect class="node-box" width="240" height="75" stroke="#10b981" />
+              <text class="node-title" x="14" y="30">Entrega Limpia al Cliente</text>
+              <text class="node-sub" x="14" y="48">HTTP 200 OK + Payload Sanitizado</text>
+              <text class="node-sub" x="14" y="64" fill="#10b981">Telemetría y Registro AuditLog</text>
+            </g>
+          </g>
+
+          <!-- CONNECTING PATHS -->
+          <g id="flow-paths">
+            <!-- User -> Normalization -->
+            <path class="edge-line animated-packet" data-from="flow-user-ingress" data-to="flow-normalize" d="M 180 170 L 180 210" marker-end="url(#arrow)" />
+
+            <!-- Normalization -> L1 Eval -->
+            <path class="edge-line animated-packet" data-from="flow-normalize" data-to="flow-l1-eval" d="M 180 280 L 180 320" marker-end="url(#arrow)" />
+
+            <!-- L1 Eval -> L1 Decision -->
+            <path class="edge-line animated-packet" data-from="flow-l1-eval" data-to="flow-l1-decision" d="M 180 400 L 180 440" marker-end="url(#arrow)" />
+
+            <!-- L1 Decision -> YES (Block) -->
+            <path class="edge-line animated-packet-danger" data-from="flow-l1-decision" data-to="flow-l1-block" d="M 180 490 L 180 530" marker-end="url(#arrow-rose)" />
+
+            <!-- L1 Decision -> NO (Clean, pass to L2) -->
+            <path class="edge-line animated-packet" data-from="flow-l1-decision" data-to="flow-embedding" d="M 260 465 Q 315 465 315 360 L 370 360" marker-end="url(#arrow)" />
+
+            <!-- L2 Eval -> L2 Decision -->
+            <path class="edge-line animated-packet" data-from="flow-embedding" data-to="flow-l2-decision" d="M 490 400 L 490 440" marker-end="url(#arrow)" />
+
+            <!-- L2 Decision -> YES (Block) -->
+            <path class="edge-line animated-packet-danger" data-from="flow-l2-decision" data-to="flow-l2-block" d="M 490 490 L 490 530" marker-end="url(#arrow-rose)" />
+
+            <!-- L2 Decision -> NO (Clean, pass to L3) -->
+            <path class="edge-line animated-packet" data-from="flow-l2-decision" data-to="flow-l3-eval" d="M 570 465 Q 625 465 625 360 L 680 360" marker-end="url(#arrow)" />
+
+            <!-- L3 Eval -> L3 Decision -->
+            <path class="edge-line animated-packet" data-from="flow-l3-eval" data-to="flow-l3-decision" d="M 800 400 L 800 440" marker-end="url(#arrow)" />
+
+            <!-- L3 Decision -> YES (Block & Learn) -->
+            <path class="edge-line animated-packet-danger" data-from="flow-l3-decision" data-to="flow-l3-block" d="M 800 490 L 800 530" marker-end="url(#arrow-rose)" />
+            <path class="edge-line animated-packet-danger" data-from="flow-l3-block" data-to="flow-auto-learning" d="M 800 590 L 800 640" marker-end="url(#arrow-rose)" />
+
+            <!-- Auto-learning feedback to Chroma L2 -->
+            <path class="edge-line" data-from="flow-auto-learning" data-to="flow-embedding" d="M 680 677 Q 530 677 530 400" marker-end="url(#arrow-emerald)" stroke="#10b981" stroke-dasharray="4, 4" />
+
+            <!-- L3 Decision -> NO (Clean, pass to L4) -->
+            <path class="edge-line animated-packet" data-from="flow-l3-decision" data-to="flow-l4-canary" d="M 880 465 Q 935 465 935 360 L 990 360" marker-end="url(#arrow)" />
+
+            <!-- L4 Canary -> Groq Model Forward -->
+            <path class="edge-line animated-packet" data-from="flow-l4-canary" data-to="flow-external-llm" d="M 1110 400 L 1110 440" marker-end="url(#arrow)" />
+
+            <!-- Groq Model -> Raw Response -->
+            <path class="edge-line animated-packet" data-from="flow-external-llm" data-to="flow-llm-response" d="M 1110 520 L 1110 560" marker-end="url(#arrow)" />
+
+            <!-- Raw Response -> L5 Eval -->
+            <path class="edge-line animated-packet" data-from="flow-llm-response" data-to="flow-l5-eval" d="M 1230 595 Q 1265 595 1265 360 L 1300 360" marker-end="url(#arrow)" />
+
+            <!-- L5 Eval -> L5 Decision -->
+            <path class="edge-line animated-packet" data-from="flow-l5-eval" data-to="flow-l5-decision" d="M 1420 400 L 1420 440" marker-end="url(#arrow)" />
+
+            <!-- L5 Decision -> YES (Canary Leak!) -->
+            <path class="edge-line animated-packet-danger" data-from="flow-l5-decision" data-to="flow-l5-leak" d="M 1420 490 L 1420 530" marker-end="url(#arrow-rose)" />
+
+            <!-- L5 Decision -> NO (Clean, sanitize & dispatch) -->
+            <path class="edge-line animated-packet" data-from="flow-l5-decision" data-to="flow-client-delivery" d="M 1500 465 Q 1555 465 1555 687 L 1540 687" marker-end="url(#arrow-emerald)" />
+          </g>
+        </g>
+      </svg>
+
+      <div class="archify-hud">
+        <button id="btn-zoom-in" class="hud-btn">+</button>
+        <button id="btn-zoom-out" class="hud-btn">−</button>
+        <button id="btn-reset" class="hud-btn">⟲</button>
+      </div>
+    </div>
+
+    <!-- Drawer -->
+    <aside id="archify-drawer" class="archify-drawer">
+      <div class="drawer-header">
+        <h3 id="drawer-node-title" class="drawer-title">Detalle de la Fase</h3>
+        <button id="drawer-close" class="drawer-close">✕</button>
+      </div>
+      <div id="drawer-node-body" class="drawer-content"></div>
+    </aside>
+  </main>
+
+  <script src="archify.js"></script>
+  <script>
+    const metadataStore = {
+      'flow-user-ingress': {
+        title: 'Entrada de Solicitud (HTTP Ingress)',
+        file: 'app/api/v1/chat.py',
+        description: 'Punto de contacto con el cliente web o integración API. Valida el esquema JSON con Pydantic y mide el tiempo de inicio (t0) con time.perf_counter().',
+        latency: '< 1 ms'
+      },
+      'flow-normalize': {
+        title: 'Normalización de Prompt',
+        file: 'app/core/pipeline.py',
+        description: 'Limpia espacios en blanco residuales, unifica caracteres invisibles Unicode y estandariza la codificación a NFC para evitar bypasses por ofuscación de bytes.',
+        latency: '< 0.5 ms'
+      },
+      'flow-l1-eval': {
+        title: 'Evaluador L1: Reglas Heurísticas y Entropía',
+        file: 'app/core/layers/l1_heuristic.py',
+        description: 'Aplica reglas precompiladas de jailbreak (DAN, developer mode, ignorar instrucciones previas) y calcula la entropía de Shannon. Si la entropía excede 4.8 bits/byte, marca sospecha de payload ofuscado.',
+        latency: '0.8 - 4.2 ms (CPU puro, sin tokens)',
+        mitre: 'AML.T0051 (Prompt Injection), AML.T0054 (Jailbreak)'
+      },
+      'flow-l1-decision': {
+        title: 'Decisión L1 (Cortocircuito Rápido)',
+        file: 'app/core/pipeline.py',
+        description: 'Si L1 detecta coincidencia, la ejecución del pipeline se detiene inmediatamente. No se gasta tiempo ni dinero en consultar bases vectoriales ni LLMs.',
+        failureMode: 'Retorno directo de excepción SecurityException con capa L1_HEURISTIC.'
+      },
+      'flow-l1-block': {
+        title: 'Bloqueo L1 (HTTP 403)',
+        file: 'app/api/v1/chat.py',
+        description: 'El cliente recibe una respuesta HTTP 403 con mensaje de seguridad. Se emite un evento atómico al collector de Telescope y se guarda el registro de auditoría.',
+        latency: '< 6 ms tiempo total'
+      },
+      'flow-embedding': {
+        title: 'Evaluador L2: Similitud Vectorial',
+        file: 'app/core/layers/l2_vectorial.py',
+        description: 'Calcula el vector de embedding del prompt con SentenceTransformer (all-MiniLM-L6-v2) y consulta el índice ChromaDB para encontrar el ataque más cercano mediante similitud coseno.',
+        latency: '15 - 45 ms',
+        mitre: 'AML.T0054 (Adversarial Prompting)'
+      },
+      'flow-l2-decision': {
+        title: 'Decisión L2 (Umbral Coseno)',
+        file: 'app/core/layers/l2_vectorial.py',
+        description: 'Compara la distancia calculada contra el umbral de seguridad (típico: 0.78). Si excede el umbral, se considera una variante sintáctica de un ataque conocido.',
+        failureMode: 'Bloqueo inmediato -> HTTP 403 (BLOCKED_L2)'
+      },
+      'flow-l2-block': {
+        title: 'Bloqueo L2 (HTTP 403)',
+        file: 'app/api/v1/chat.py',
+        description: 'Bloqueo en capa vectorial. Previene que variantes parafraseadas de ataques lleguen a consumir inferencias costosas de LLMs.',
+        latency: '< 50 ms tiempo total'
+      },
+      'flow-l3-eval': {
+        title: 'Evaluador L3: Inteligencia Defensiva',
+        file: 'app/core/layers/l3_intelligence.py',
+        description: 'Envía el prompt a un modelo LLM clasificador de ultra baja latencia con un metaprompt de seguridad estricto que exige clasificar en JSON { is_threat: bool, threat_type: str, confidence: float }.',
+        latency: '140 - 260 ms',
+        mitre: 'AML.T0054 (Jailbreak contextual y juego de roles)'
+      },
+      'flow-l3-decision': {
+        title: 'Decisión L3 (Razonamiento Defensivo)',
+        file: 'app/core/layers/l3_intelligence.py',
+        description: 'Si el clasificador determina amenaza con confianza superior al umbral configurado, se activa la inmunidad adaptativa.',
+        failureMode: 'Bloqueo y disparo de auto-retroalimentación.'
+      },
+      'flow-l3-block': {
+        title: 'Bloqueo L3 (HTTP 403)',
+        file: 'app/api/v1/chat.py',
+        description: 'Intercepción de ataque semántico sofisticado. Notificación al cliente y registro de incidente.',
+        latency: '< 290 ms'
+      },
+      'flow-auto-learning': {
+        title: 'Inmunidad Adaptativa (Feedback Loop)',
+        file: 'app/core/layers/l2_vectorial.py',
+        description: 'El nuevo ataque detectado en L3 se vectoriza y se inserta automáticamente en la colección de ChromaDB. En futuros intentos, el mismo ataque o sus variantes serán detenidos en L2 (< 50ms) sin pasar por L3.',
+        mitre: 'Capacidad de Auto-Endurecimiento Perimetral'
+      },
+      'flow-l4-canary': {
+        title: 'Capa L4: Esteganografía de Canarios',
+        file: 'app/core/layers/l4_canary.py',
+        description: 'Genera un identificador aleatorio criptográficamente seguro (UUIDv4) y lo incrusta dentro de un marcador de sistema confidencial en el payload hacia el modelo destino.',
+        latency: '< 1 ms'
+      },
+      'flow-external-llm': {
+        title: 'Inferencia en Groq Cloud LLM',
+        file: 'app/services/groq_client.py',
+        description: 'Transmisión del prompt protegido hacia los aceleradores LPU de Groq ejecutando Llama-3.3-70b-versatile.',
+        latency: '200 - 650 ms'
+      },
+      'flow-llm-response': {
+        title: 'Respuesta Cruda del Modelo',
+        file: 'app/core/pipeline.py',
+        description: 'Recepción del texto generado por el LLM antes de cualquier procesamiento hacia el cliente.',
+        latency: '< 1 ms'
+      },
+      'flow-l5-eval': {
+        title: 'Capa L5: Inspección de Egreso y PII',
+        file: 'app/core/layers/l5_egress.py',
+        description: 'Verifica exhaustivamente que el token canario inyectado en L4 no aparezca en la respuesta generada (lo que delataría que el modelo acató órdenes de filtrar sus instrucciones de sistema). Luego, aplica patrones de anonimización de emails, API keys, tarjetas y DNI.',
+        latency: '4 - 15 ms',
+        mitre: 'OWASP LLM06 (Divulgación de Datos Sensibles)'
+      },
+      'flow-l5-decision': {
+        title: 'Decisión L5 (Fuga de Canario)',
+        file: 'app/core/layers/l5_egress.py',
+        description: 'Si el canario aparece en el texto saliente, se considera un incidente grave de exfiltración de prompt de sistema.',
+        failureMode: 'Activación de cuarentena y envío de alerta SMTP.'
+      },
+      'flow-l5-leak': {
+        title: 'Fuga Crítica Detectada y Cuarentena',
+        file: 'app/services/email_notifier.py',
+        description: 'El contenido saliente se sustituye por un mensaje de error seguro. Se envía una alerta por correo electrónico a los administradores con el ID del incidente y se registra en PostgreSQL.',
+        failureMode: 'Filtro duro de seguridad.'
+      },
+      'flow-client-delivery': {
+        title: 'Entrega Final al Cliente',
+        file: 'app/api/v1/chat.py',
+        description: 'El usuario recibe la respuesta higienizada en formato HTTP 200 OK, junto con las métricas de latencia de cada capa y el estado de validación.',
+        latency: 'Respuesta completa y segura'
+      }
+    };
+
+    new ArchifyViewer({
+      metadataStore: metadataStore
+    });
+  </script>
+</body>
+</html>

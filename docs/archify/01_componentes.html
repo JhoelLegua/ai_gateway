@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Gateway - 01. Arquitectura de Componentes (Clean Architecture)</title>
+  <link rel="stylesheet" href="archify.css">
+  <style>
+    .cluster-box {
+      fill: var(--bg-secondary);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      stroke-dasharray: 4, 4;
+      rx: 10;
+    }
+    .cluster-label {
+      font-size: 12px;
+      font-weight: 700;
+      fill: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .node-box {
+      fill: var(--bg-card);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      rx: 8;
+      transition: var(--transition);
+    }
+    .node-title {
+      font-size: 13px;
+      font-weight: 600;
+      fill: var(--text-primary);
+    }
+    .node-sub {
+      font-size: 10px;
+      fill: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+    .badge-rect {
+      rx: 3;
+    }
+    .badge-text {
+      font-size: 9px;
+      font-weight: 700;
+      fill: #ffffff;
+      text-anchor: middle;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="archify-header">
+    <div class="archify-branding">
+      <span class="archify-badge">AI GATEWAY</span>
+      <span class="archify-title">01. Mapa de Componentes y Descomposición Clean Architecture</span>
+      <span class="archify-subtitle">AI Gateway Perimetral</span>
+    </div>
+    <div class="archify-controls">
+      <a href="index.html" target="_top" class="archify-btn btn-hub">← Hub Principal</a>
+      <button id="theme-toggle" class="archify-btn">Modo Claro</button>
+    </div>
+  </header>
+
+  <!-- Workspace Canvas -->
+  <main class="archify-workspace">
+    <div class="archify-canvas-container">
+      <svg class="archify-svg" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Arrow Markers -->
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#58a6ff" />
+          </marker>
+          <marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+          </marker>
+          <marker id="arrow-rose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+          </marker>
+        </defs>
+
+        <g id="viewport">
+          <!-- CLUSTER: Presentación / Clientes -->
+          <g id="cluster-presentation">
+            <rect class="cluster-box" x="40" y="40" width="260" height="820" />
+            <text class="cluster-label" x="60" y="70">Capa de Presentación & UI</text>
+
+            <!-- Node: Chat UI -->
+            <g id="node-chat-ui" class="node-group" transform="translate(60, 100)">
+              <rect class="node-box" width="220" height="75" />
+              <rect class="badge-rect" x="12" y="12" width="55" height="16" fill="#3b82f6" />
+              <text class="badge-text" x="39" y="24">FRONTEND</text>
+              <text class="node-title" x="12" y="48">Cliente Web Chat</text>
+              <text class="node-sub" x="12" y="64">frontend/index.html</text>
+            </g>
+
+            <!-- Node: Telescope HUD -->
+            <g id="node-telescope-ui" class="node-group" transform="translate(60, 220)">
+              <rect class="node-box" width="220" height="75" />
+              <rect class="badge-rect" x="12" y="12" width="65" height="16" fill="#a855f7" />
+              <text class="badge-text" x="44" y="24">TELESCOPE</text>
+              <text class="node-title" x="12" y="48">Telescope HUD</text>
+              <text class="node-sub" x="12" y="64">frontend/telescope/</text>
+            </g>
+
+            <!-- Node: Stress Test CLI/Harness -->
+            <g id="node-stress-ui" class="node-group" transform="translate(60, 340)">
+              <rect class="node-box" width="220" height="75" />
+              <rect class="badge-rect" x="12" y="12" width="55" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="39" y="24">HARNESS</text>
+              <text class="node-title" x="12" y="48">Generador de Estrés</text>
+              <text class="node-sub" x="12" y="64">app/services/stress_test.py</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER: Transporte y Routers (FastAPI) -->
+          <g id="cluster-transport">
+            <rect class="cluster-box" x="340" y="40" width="260" height="820" />
+            <text class="cluster-label" x="360" y="70">Capa de Transporte (FastAPI)</text>
+
+            <!-- Node: API Chat -->
+            <g id="node-router-chat" class="node-group" transform="translate(360, 100)">
+              <rect class="node-box" width="220" height="75" />
+              <rect class="badge-rect" x="12" y="12" width="55" height="16" fill="#10b981" />
+              <text class="badge-text" x="39" y="24">ROUTER</text>
+              <text class="node-title" x="12" y="48">/api/v1/chat</text>
+              <text class="node-sub" x="12" y="64">app/api/v1/chat.py</text>
+            </g>
+
+            <!-- Node: API Metrics -->
+            <g id="node-router-metrics" class="node-group" transform="translate(360, 220)">
+              <rect class="node-box" width="220" height="75" />
+              <rect class="badge-rect" x="12" y="12" width="55" height="16" fill="#10b981" />
+              <text class="badge-text" x="39" y="24">ROUTER</text>
+              <text class="node-title" x="12" y="48">/api/v1/metrics</text>
+              <text class="node-sub" x="12" y="64">app/api/v1/metrics.py</text>
+            </g>
+
+            <!-- Node: API Stress Test -->
+            <g id="node-router-stress" class="node-group" transform="translate(360, 340)">
+              <rect class="node-box" width="220" height="75" />
+              <rect class="badge-rect" x="12" y="12" width="55" height="16" fill="#10b981" />
+              <text class="badge-text" x="39" y="24">ROUTER</text>
+              <text class="node-title" x="12" y="48">/api/v1/stress-test</text>
+              <text class="node-sub" x="12" y="64">app/api/v1/stress_test.py</text>
+            </g>
+
+            <!-- Node: FastAPI Application Core -->
+            <g id="node-app-main" class="node-group" transform="translate(360, 480)">
+              <rect class="node-box" width="220" height="75" />
+              <rect class="badge-rect" x="12" y="12" width="45" height="16" fill="#6366f1" />
+              <text class="badge-text" x="34" y="24">APP</text>
+              <text class="node-title" x="12" y="48">FastAPI Core App</text>
+              <text class="node-sub" x="12" y="64">app/main.py</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER: Core Pipeline Engine & Security Layers -->
+          <g id="cluster-core">
+            <rect class="cluster-box" x="640" y="40" width="370" height="820" />
+            <text class="cluster-label" x="660" y="70">Núcleo de Inspección Perimetral</text>
+
+            <!-- Node: Pipeline Orchestrator -->
+            <g id="node-pipeline" class="node-group" transform="translate(660, 100)">
+              <rect class="node-box" width="330" height="75" />
+              <rect class="badge-rect" x="12" y="12" width="85" height="16" fill="#38bdf8" />
+              <text class="badge-text" x="54" y="24">ORCHESTRATOR</text>
+              <text class="node-title" x="12" y="48">InspectionPipeline</text>
+              <text class="node-sub" x="12" y="64">app/core/pipeline.py</text>
+            </g>
+
+            <!-- Node: L1 Heuristic -->
+            <g id="node-l1" class="node-group" transform="translate(660, 210)">
+              <rect class="node-box" width="330" height="70" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="22">CAPA L1</text>
+              <text class="node-title" x="12" y="44">L1_HeuristicLayer (Regex/Entropy)</text>
+              <text class="node-sub" x="12" y="60">app/core/layers/l1_heuristic.py</text>
+            </g>
+
+            <!-- Node: L2 Vectorial -->
+            <g id="node-l2" class="node-group" transform="translate(660, 310)">
+              <rect class="node-box" width="330" height="70" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="22">CAPA L2</text>
+              <text class="node-title" x="12" y="44">L2_VectorialLayer (ChromaDB)</text>
+              <text class="node-sub" x="12" y="60">app/core/layers/l2_vectorial.py</text>
+            </g>
+
+            <!-- Node: L3 Intelligence -->
+            <g id="node-l3" class="node-group" transform="translate(660, 410)">
+              <rect class="node-box" width="330" height="70" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="22">CAPA L3</text>
+              <text class="node-title" x="12" y="44">L3_IntelligenceLayer (Defense LLM)</text>
+              <text class="node-sub" x="12" y="60">app/core/layers/l3_intelligence.py</text>
+            </g>
+
+            <!-- Node: L4 Canary -->
+            <g id="node-l4" class="node-group" transform="translate(660, 510)">
+              <rect class="node-box" width="330" height="70" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="22">CAPA L4</text>
+              <text class="node-title" x="12" y="44">L4_CanaryLayer (Token Injection)</text>
+              <text class="node-sub" x="12" y="60">app/core/layers/l4_canary.py</text>
+            </g>
+
+            <!-- Node: L5 Egress -->
+            <g id="node-l5" class="node-group" transform="translate(660, 610)">
+              <rect class="node-box" width="330" height="70" />
+              <rect class="badge-rect" x="12" y="10" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="22">CAPA L5</text>
+              <text class="node-title" x="12" y="44">L5_EgressLayer (Leak & PII Filter)</text>
+              <text class="node-sub" x="12" y="60">app/core/layers/l5_egress.py</text>
+            </g>
+
+            <!-- Node: Metrics Collector -->
+            <g id="node-metrics-collector" class="node-group" transform="translate(660, 720)">
+              <rect class="node-box" width="330" height="70" />
+              <rect class="badge-rect" x="12" y="10" width="85" height="16" fill="#a855f7" />
+              <text class="badge-text" x="54" y="22">TELEMETRÍA</text>
+              <text class="node-title" x="12" y="44">MetricsCollector (Atomic Deque)</text>
+              <text class="node-sub" x="12" y="60">app/services/metrics.py</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER: Servicios Externos & Persistencia -->
+          <g id="cluster-external">
+            <rect class="cluster-box" x="1050" y="40" width="310" height="820" />
+            <text class="cluster-label" x="1070" y="70">Servicios Externos & Datos</text>
+
+            <!-- Node: Groq Cloud LLM -->
+            <g id="node-groq" class="node-group" transform="translate(1070, 100)">
+              <rect class="node-box" width="270" height="80" />
+              <rect class="badge-rect" x="12" y="12" width="65" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="44" y="24">PROVIDER</text>
+              <text class="node-title" x="12" y="48">Groq Cloud LLM API</text>
+              <text class="node-sub" x="12" y="66">Llama-3.3-70b / Llama-3.1-8b</text>
+            </g>
+
+            <!-- Node: Brevo SMTP Alerting -->
+            <g id="node-brevo" class="node-group" transform="translate(1070, 230)">
+              <rect class="node-box" width="270" height="80" />
+              <rect class="badge-rect" x="12" y="12" width="65" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="44" y="24">ALERTA</text>
+              <text class="node-title" x="12" y="48">Brevo Transactional SMTP</text>
+              <text class="node-sub" x="12" y="66">app/services/email_notifier.py</text>
+            </g>
+
+            <!-- Node: PostgreSQL Database -->
+            <g id="node-postgres" class="node-group" transform="translate(1070, 360)">
+              <rect class="node-box" width="270" height="80" />
+              <rect class="badge-rect" x="12" y="12" width="65" height="16" fill="#3b82f6" />
+              <text class="badge-text" x="44" y="24">DATABASE</text>
+              <text class="node-title" x="12" y="48">PostgreSQL (SQLAlchemy)</text>
+              <text class="node-sub" x="12" y="66">AuditLogs, Incidents, Settings</text>
+            </g>
+
+            <!-- Node: ChromaDB Vector Store -->
+            <g id="node-chroma" class="node-group" transform="translate(1070, 490)">
+              <rect class="node-box" width="270" height="80" />
+              <rect class="badge-rect" x="12" y="12" width="75" height="16" fill="#10b981" />
+              <text class="badge-text" x="49" y="24">VECTOR DB</text>
+              <text class="node-title" x="12" y="48">ChromaDB Vector Store</text>
+              <text class="node-sub" x="12" y="66">Adversarial Embeddings (L2)</text>
+            </g>
+          </g>
+
+          <!-- EDGES & DEPENDENCY PATHS -->
+          <g id="edges-layer">
+            <!-- Chat UI -> Router Chat -->
+            <path class="edge-line animated-packet" data-from="node-chat-ui" data-to="node-router-chat" d="M 280 137 L 360 137" marker-end="url(#arrow)" />
+
+            <!-- Telescope UI -> Router Metrics -->
+            <path class="edge-line animated-packet" data-from="node-telescope-ui" data-to="node-router-metrics" d="M 280 257 L 360 257" marker-end="url(#arrow)" />
+
+            <!-- Stress UI -> Router Stress -->
+            <path class="edge-line animated-packet" data-from="node-stress-ui" data-to="node-router-stress" d="M 280 377 L 360 377" marker-end="url(#arrow)" />
+
+            <!-- Router Chat -> Pipeline -->
+            <path class="edge-line animated-packet" data-from="node-router-chat" data-to="node-pipeline" d="M 580 137 L 660 137" marker-end="url(#arrow)" />
+
+            <!-- Router Metrics -> Metrics Collector -->
+            <path class="edge-line animated-packet" data-from="node-router-metrics" data-to="node-metrics-collector" d="M 580 257 Q 620 257 620 755 L 660 755" marker-end="url(#arrow)" />
+
+            <!-- Router Stress -> Pipeline -->
+            <path class="edge-line" data-from="node-router-stress" data-to="node-pipeline" d="M 580 377 Q 610 377 610 150 L 660 150" marker-end="url(#arrow)" />
+
+            <!-- Pipeline -> L1 -->
+            <path class="edge-line animated-packet" data-from="node-pipeline" data-to="node-l1" d="M 825 175 L 825 210" marker-end="url(#arrow)" />
+
+            <!-- L1 -> L2 -->
+            <path class="edge-line animated-packet" data-from="node-l1" data-to="node-l2" d="M 825 280 L 825 310" marker-end="url(#arrow)" />
+
+            <!-- L2 -> ChromaDB -->
+            <path class="edge-line" data-from="node-l2" data-to="node-chroma" d="M 990 345 Q 1030 345 1030 530 L 1070 530" marker-end="url(#arrow-emerald)" />
+
+            <!-- L2 -> L3 -->
+            <path class="edge-line animated-packet" data-from="node-l2" data-to="node-l3" d="M 825 380 L 825 410" marker-end="url(#arrow)" />
+
+            <!-- L3 -> Groq (Defense evaluation) -->
+            <path class="edge-line" data-from="node-l3" data-to="node-groq" d="M 990 445 Q 1040 445 1040 140 L 1070 140" marker-end="url(#arrow)" />
+
+            <!-- L3 -> L4 -->
+            <path class="edge-line animated-packet" data-from="node-l3" data-to="node-l4" d="M 825 480 L 825 510" marker-end="url(#arrow)" />
+
+            <!-- L4 -> Groq (Prompt seguro hacia modelo destino) -->
+            <path class="edge-line animated-packet-fast" data-from="node-l4" data-to="node-groq" d="M 990 545 Q 1050 545 1050 160 L 1070 160" marker-end="url(#arrow)" />
+
+            <!-- Groq Response -> L5 Egress -->
+            <path class="edge-line animated-packet" data-from="node-groq" data-to="node-l5" d="M 1205 180 Q 1205 645 990 645" marker-end="url(#arrow)" />
+
+            <!-- L5 -> Brevo (Alerta si hay fuga) -->
+            <path class="edge-line animated-packet-danger" data-from="node-l5" data-to="node-brevo" d="M 990 635 Q 1040 635 1040 270 L 1070 270" marker-end="url(#arrow-rose)" />
+
+            <!-- Pipeline -> PostgreSQL (Audit log) -->
+            <path class="edge-line" data-from="node-pipeline" data-to="node-postgres" d="M 990 120 Q 1030 120 1030 400 L 1070 400" marker-end="url(#arrow)" />
+
+            <!-- Pipeline -> Metrics Collector -->
+            <path class="edge-line" data-from="node-pipeline" data-to="node-metrics-collector" d="M 660 160 Q 630 160 630 735 L 660 735" marker-end="url(#arrow)" />
+          </g>
+        </g>
+      </svg>
+
+      <!-- HUD Controls -->
+      <div class="archify-hud">
+        <button id="btn-zoom-in" class="hud-btn" title="Acercar">+</button>
+        <button id="btn-zoom-out" class="hud-btn" title="Alejar">−</button>
+        <button id="btn-reset" class="hud-btn" title="Restablecer">⟲</button>
+      </div>
+
+      <!-- Legend -->
+      <div class="archify-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background-color: var(--accent-cyan);"></div>
+          <span>Flujo de Datos Principal</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background-color: var(--accent-rose);"></div>
+          <span>Capas de Seguridad / Alertas</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background-color: var(--accent-emerald);"></div>
+          <span>Almacenamiento Vectorial</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background-color: var(--accent-purple);"></div>
+          <span>Telemetría Telescope</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical Details Drawer -->
+    <aside id="archify-drawer" class="archify-drawer">
+      <div class="drawer-header">
+        <h3 id="drawer-node-title" class="drawer-title">Detalle del Componente</h3>
+        <button id="drawer-close" class="drawer-close">✕</button>
+      </div>
+      <div id="drawer-node-body" class="drawer-content">
+        <!-- Injected dynamically -->
+      </div>
+    </aside>
+  </main>
+
+  <script src="archify.js"></script>
+  <script>
+    const metadataStore = {
+      'node-chat-ui': {
+        title: 'Cliente Web de Chat',
+        file: 'frontend/index.html & js/app.js',
+        description: 'Interfaz de usuario para interacción con el modelo de lenguaje a través del Gateway. Gestiona sesiones, visualización de mensajes y advertencias en caso de bloqueo perimetral.',
+        io: 'Input: Prompt de usuario -> Output: Petición HTTP POST /api/v1/chat',
+        latency: '< 10ms renderizado'
+      },
+      'node-telescope-ui': {
+        title: 'Telescope Observability HUD',
+        file: 'frontend/telescope/index.html & js/telescope.js',
+        description: 'Panel en tiempo real para monitoreo de seguridad y rendimiento. Muestra histograma de latencias P50/P95/P99, tasa de bloqueo por capa, auditoría de eventos y pruebas de estrés.',
+        io: 'Input: SSE stream / Polling /api/v1/metrics -> Output: Gráficas dinámicas SVG',
+        latency: 'Actualización cada 1000ms'
+      },
+      'node-stress-ui': {
+        title: 'Motor de Pruebas de Estrés',
+        file: 'app/services/stress_test.py',
+        description: 'Generador sintético concurrente de solicitudes maliciosas y benignas para benchmarking de throughput, saturación de CPU y latencia agregada del Gateway.',
+        io: 'Configuración de concurrencia y rondas -> Ejecución asíncrona',
+        latency: 'Configurable (1 - 100 concurrentes)'
+      },
+      'node-router-chat': {
+        title: 'Router de Chat (/api/v1/chat)',
+        file: 'app/api/v1/chat.py',
+        description: 'Punto de entrada principal para inferencias LLM. Valida payloads Pydantic, coordina el pipeline de inspección y devuelve respuestas o excepciones HTTP 403 con código de capa causante.',
+        io: 'ChatRequest { message, history } -> ChatResponse { response, latency_ms, layers_passed }',
+        latency: 'Overhead propio < 1ms'
+      },
+      'node-router-metrics': {
+        title: 'Router de Métricas (/api/v1/metrics)',
+        file: 'app/api/v1/metrics.py',
+        description: 'Expone endpoints REST y SSE (Server-Sent Events) para transmitir la telemetría en tiempo real sin recargar la base de datos.',
+        io: 'GET /api/v1/metrics/summary, GET /api/v1/metrics/stream',
+        latency: '< 2ms respuesta'
+      },
+      'node-router-stress': {
+        title: 'Router de Estrés (/api/v1/stress-test)',
+        file: 'app/api/v1/stress_test.py',
+        description: 'Permite disparar pruebas de estrés desde el dashboard Telescope o via API con cancelación graciosa y streaming de progreso.',
+        io: 'POST /api/v1/stress-test/run -> JSON métricas consolidadas',
+        latency: 'Asíncrono en background'
+      },
+      'node-app-main': {
+        title: 'Aplicación Núcleo FastAPI',
+        file: 'app/main.py',
+        description: 'Configuración global de FastAPI, middlewares CORS, manejo centralizado de excepciones y montaje de routers y archivos estáticos.',
+        io: 'Inicialización de ciclos de vida ASGI (Lifespan)',
+        latency: 'N/A'
+      },
+      'node-pipeline': {
+        title: 'InspectionPipeline (Orquestador)',
+        file: 'app/core/pipeline.py',
+        description: 'Controlador de la cadena de defensa en profundidad. Ejecuta secuencialmente L1, L2, L3, inyecta canarios L4, invoca al LLM y filtra en L5. Implementa cortocircuito inmediato en caso de detección.',
+        io: 'Entrada: Prompt -> Salida: PipelineResult (status, sanitized_content, layers_passed, canary)',
+        latency: 'Suma de capas activas (típico: 80 - 280ms)',
+        failureMode: 'Fast-Fail: Corta la ejecución en la primera capa que detecte amenaza.'
+      },
+      'node-l1': {
+        title: 'Capa L1: Heurística y Reglas Estáticas',
+        file: 'app/core/layers/l1_heuristic.py',
+        description: 'Filtro ultrarrápido sin consumo de tokens ni IA. Evalúa patrones regex compilados de Jailbreaks, firmas YARA y entropía de Shannon para detectar código ofuscado o shells.',
+        latency: '< 5 ms',
+        mitre: 'AML.T0054 (LLM Jailbreak), AML.T0051 (LLM Prompt Injection)',
+        failureMode: 'Bloqueo inmediato -> HTTP 403 (BLOCKED_L1)'
+      },
+      'node-l2': {
+        title: 'Capa L2: Similitud Vectorial Semántica',
+        file: 'app/core/layers/l2_vectorial.py',
+        description: 'Convierte el prompt en un vector denso con all-MiniLM-L6-v2 y busca vecinos más cercanos en ChromaDB contra un banco de ataques vectorizados. Detecta variaciones semánticas que evaden L1.',
+        latency: '< 50 ms',
+        mitre: 'AML.T0054 (Adversarial Prompting evasion)',
+        failureMode: 'Bloqueo inmediato si cosine_similarity > umbral -> HTTP 403 (BLOCKED_L2)'
+      },
+      'node-l3': {
+        title: 'Capa L3: Inteligencia Defensiva (LLM Guard)',
+        file: 'app/core/layers/l3_intelligence.py',
+        description: 'Evalúa la intención latente del usuario mediante un clasificador LLM ultrarrápido (Llama-3.1-8b) con salida JSON estricta. Analiza ataques complejos de ingeniería social o roles simulados.',
+        latency: '< 250 ms',
+        mitre: 'AML.T0054 (Multi-turn Jailbreak & Persona Adoption)',
+        failureMode: 'Bloqueo -> Alimenta automáticamente a ChromaDB con el nuevo patrón (Inmunidad Adaptativa).'
+      },
+      'node-l4': {
+        title: 'Capa L4: Inyección de Canarios Criptográficos',
+        file: 'app/core/layers/l4_canary.py',
+        description: 'Inyecta un token único UUIDv4 esteganográfico dentro de los delimitadores del sistema antes de enviar el prompt al LLM objetivo. Sirve como trampa para detectar fugas de instrucciones de sistema.',
+        latency: '< 1 ms',
+        mitre: 'AML.T0056 (Model Extraction / System Prompt Leakage)',
+        failureMode: 'Si el canario es revelado en la salida, L5 lo captura inmediatamente.'
+      },
+      'node-l5': {
+        title: 'Capa L5: Inspección de Egreso y Anonimización',
+        file: 'app/core/layers/l5_egress.py',
+        description: 'Examina la respuesta generada por el LLM antes de enviarla al cliente. Verifica que el token canario no se haya filtrado y anonimiza información confidencial (emails, API keys, DNI, tarjetas).',
+        latency: '< 15 ms',
+        mitre: 'OWASP LLM06 (Sensitive Information Disclosure)',
+        failureMode: 'Fuga de Canario -> Bloqueo total + Alerta de correo crítica vía Brevo. PII -> Redacción in-place.'
+      },
+      'node-metrics-collector': {
+        title: 'MetricsCollector (Telemetría de Alta Frecuencia)',
+        file: 'app/services/metrics.py',
+        description: 'Estructura en memoria basada en colecciones deque de tamaño fijo. Almacena las últimas 1000 mediciones sin bloquear threads y calcula P50, P95, P99 y tasas de bloqueo al vuelo.',
+        latency: '< 0.05 ms por evento',
+        failureMode: 'Estructura thread-safe circular sin fugas de memoria.'
+      },
+      'node-groq': {
+        title: 'Groq Cloud LLM API',
+        file: 'https://api.groq.com/openai/v1',
+        description: 'Proveedor externo de inferencia ultrarrápida impulsado por tecnología LPU (Language Processing Unit). Ejecuta los modelos Llama-3.3-70b-versatile y Llama-3.1-8b-instant.',
+        io: 'Tokens de entrada -> Tokens de salida generados',
+        latency: '150 - 600 ms'
+      },
+      'node-brevo': {
+        title: 'Brevo Transactional SMTP',
+        file: 'app/services/email_notifier.py',
+        description: 'Servicio de notificación de incidentes críticos de seguridad. Dispara correos estructurados al equipo de respuesta ante incidentes cuando se detecta fuga de canario o saturación anormal.',
+        io: 'IncidentPayload -> Correo SMTP RFC 822',
+        latency: 'Enviado en background task asíncrona'
+      },
+      'node-postgres': {
+        title: 'Base de Datos PostgreSQL (Auditoría)',
+        file: 'app/db/session.py & app/models/',
+        description: 'Almacén relacional principal. Persiste registros inmutables de auditoría (AuditLog), historial de incidentes y parámetros dinámicos de configuración.',
+        io: 'SQLAlchemy Async Sessions',
+        latency: '< 5 ms inserción'
+      },
+      'node-chroma': {
+        title: 'ChromaDB Vector Store',
+        file: 'chroma_db/ & app/core/layers/l2_vectorial.py',
+        description: 'Base de datos vectorial local. Mantiene los embeddings de ataques conocidos y recibe nuevos vectores automáticamente en el bucle de inmunidad adaptativa.',
+        io: 'Query vectorial por distancia coseno (384 dimensiones)',
+        latency: '< 12 ms búsqueda'
+      }
+    };
+
+    new ArchifyViewer({
+      metadataStore: metadataStore
+    });
+  </script>
+</body>
+</html>

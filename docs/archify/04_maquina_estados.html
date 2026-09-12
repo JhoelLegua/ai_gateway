@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Gateway - 04. Diagrama de Ciclo de Vida y Máquina de Estados</title>
+  <link rel="stylesheet" href="archify.css">
+  <style>
+    .state-node {
+      fill: var(--bg-card);
+      stroke: var(--border-subtle);
+      stroke-width: 2;
+      rx: 24;
+      transition: var(--transition);
+    }
+    .state-initial {
+      fill: var(--accent-cyan);
+      stroke: none;
+    }
+    .state-terminal {
+      fill: none;
+      stroke: var(--accent-emerald);
+      stroke-width: 2;
+    }
+    .state-terminal-inner {
+      fill: var(--accent-emerald);
+    }
+    .state-danger {
+      fill: rgba(244, 63, 94, 0.15);
+      stroke: var(--accent-rose);
+      stroke-width: 2;
+      rx: 24;
+    }
+    .state-title {
+      font-size: 13px;
+      font-weight: 700;
+      fill: var(--text-primary);
+      text-anchor: middle;
+    }
+    .state-sub {
+      font-size: 10px;
+      fill: var(--text-secondary);
+      font-family: var(--font-mono);
+      text-anchor: middle;
+    }
+    .transition-text {
+      font-size: 10px;
+      font-weight: 600;
+      fill: var(--accent-cyan);
+      font-family: var(--font-mono);
+    }
+    .guard-text {
+      font-size: 9px;
+      fill: var(--accent-amber);
+      font-family: var(--font-mono);
+    }
+    .danger-text {
+      font-size: 9px;
+      fill: var(--accent-rose);
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+  <header class="archify-header">
+    <div class="archify-branding">
+      <span class="archify-badge">AI GATEWAY</span>
+      <span class="archify-title">04. Ciclo de Vida de Petición y Máquina de Estados de Tokens Canario</span>
+      <span class="archify-subtitle">Autómata de Estados Finitos (FSM)</span>
+    </div>
+    <div class="archify-controls">
+      <a href="index.html" target="_top" class="archify-btn btn-hub">← Hub Principal</a>
+      <button id="theme-toggle" class="archify-btn">Modo Claro</button>
+    </div>
+  </header>
+
+  <main class="archify-workspace">
+    <div class="archify-canvas-container">
+      <svg class="archify-svg" viewBox="0 0 1600 950" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arrow-rose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+          </marker>
+          <marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+          </marker>
+        </defs>
+
+        <g id="viewport">
+          <!-- INITIAL STATE CIRCLE -->
+          <circle cx="80" cy="400" r="14" class="state-initial" />
+          <text x="80" y="435" class="state-sub">INICIO</text>
+
+          <!-- STATE 1: RECEIVED -->
+          <g id="state-received" class="node-group" transform="translate(160, 360)">
+            <rect class="state-node" width="180" height="80" />
+            <text class="state-title" x="90" y="36">INGESTED</text>
+            <text class="state-sub" x="90" y="56">Payload validado (Pydantic)</text>
+          </g>
+
+          <!-- STATE 2: L1 EVAL -->
+          <g id="state-l1" class="node-group" transform="translate(420, 360)">
+            <rect class="state-node" width="180" height="80" />
+            <text class="state-title" x="90" y="36">L1_HEURISTIC</text>
+            <text class="state-sub" x="90" y="56">Regex & Entropía (&lt;5ms)</text>
+          </g>
+
+          <!-- STATE 3: L2 EVAL -->
+          <g id="state-l2" class="node-group" transform="translate(680, 360)">
+            <rect class="state-node" width="180" height="80" />
+            <text class="state-title" x="90" y="36">L2_VECTORIAL</text>
+            <text class="state-sub" x="90" y="56">ChromaDB Cosine (&lt;50ms)</text>
+          </g>
+
+          <!-- STATE 4: L3 EVAL -->
+          <g id="state-l3" class="node-group" transform="translate(940, 360)">
+            <rect class="state-node" width="180" height="80" />
+            <text class="state-title" x="90" y="36">L3_INTELLIGENCE</text>
+            <text class="state-sub" x="90" y="56">Guard LLM Intent (&lt;250ms)</text>
+          </g>
+
+          <!-- STATE 5: CANARY ATTACHED -->
+          <g id="state-l4" class="node-group" transform="translate(1200, 360)">
+            <rect class="state-node" width="180" height="80" stroke="#a855f7" />
+            <text class="state-title" x="90" y="36">CANARY_ATTACHED</text>
+            <text class="state-sub" x="90" y="56">UUIDv4 inyectado (L4)</text>
+          </g>
+
+          <!-- STATE 6: IN FLIGHT -->
+          <g id="state-flight" class="node-group" transform="translate(1200, 520)">
+            <rect class="state-node" width="180" height="80" stroke="#3b82f6" />
+            <text class="state-title" x="90" y="36">LLM_IN_FLIGHT</text>
+            <text class="state-sub" x="90" y="56">Ejecución en Groq Cloud</text>
+          </g>
+
+          <!-- STATE 7: L5 EGRESS EVAL -->
+          <g id="state-l5" class="node-group" transform="translate(940, 520)">
+            <rect class="state-node" width="180" height="80" stroke="#f43f5e" />
+            <text class="state-title" x="90" y="36">EGRESS_SCANNING</text>
+            <text class="state-sub" x="90" y="56">Canary Check & PII Mask</text>
+          </g>
+
+          <!-- STATE 8: TERMINAL SAFE (200 OK) -->
+          <g id="state-clean" class="node-group" transform="translate(680, 520)">
+            <circle cx="90" cy="40" r="38" class="state-terminal" />
+            <circle cx="90" cy="40" r="30" class="state-terminal-inner" />
+            <text class="state-title" x="90" y="44" fill="#0e1117">CLEAN</text>
+            <text class="state-sub" x="90" y="95" fill="#10b981">HTTP 200 OK Dispatched</text>
+          </g>
+
+          <!-- STATE 9: TERMINAL BLOCKED INGRESS -->
+          <g id="state-blocked-ingress" class="node-group" transform="translate(680, 160)">
+            <rect class="state-danger" width="220" height="80" />
+            <text class="state-title" x="110" y="36" fill="#f43f5e">BLOCKED_INGRESS</text>
+            <text class="state-sub" x="110" y="56" fill="#f43f5e">HTTP 403 Forbidden</text>
+          </g>
+
+          <!-- STATE 10: TERMINAL QUARANTINE EGRESS -->
+          <g id="state-quarantine" class="node-group" transform="translate(940, 690)">
+            <rect class="state-danger" width="220" height="80" />
+            <text class="state-title" x="110" y="36" fill="#f43f5e">QUARANTINED_EGRESS</text>
+            <text class="state-sub" x="110" y="56" fill="#f43f5e">Canary Leaked + SMTP Alert</text>
+          </g>
+
+          <!-- TRANSITIONS & PATHS -->
+          <!-- Init -> Received -->
+          <path class="edge-line animated-packet" d="M 94 400 L 160 400" marker-end="url(#arrow)" />
+
+          <!-- Received -> L1 -->
+          <path class="edge-line animated-packet" data-from="state-received" data-to="state-l1" d="M 340 400 L 420 400" marker-end="url(#arrow)" />
+          <text class="transition-text" x="350" y="392">eval()</text>
+
+          <!-- L1 -> Blocked Ingress -->
+          <path class="edge-line-danger animated-packet-danger" data-from="state-l1" data-to="state-blocked-ingress" d="M 510 360 Q 510 200 680 200" marker-end="url(#arrow-rose)" />
+          <text class="danger-text" x="480" y="270">[L1 Match | Entropy &gt; 4.8]</text>
+
+          <!-- L1 -> L2 -->
+          <path class="edge-line animated-packet" data-from="state-l1" data-to="state-l2" d="M 600 400 L 680 400" marker-end="url(#arrow)" />
+          <text class="guard-text" x="615" y="392">[L1 Clean]</text>
+
+          <!-- L2 -> Blocked Ingress -->
+          <path class="edge-line-danger animated-packet-danger" data-from="state-l2" data-to="state-blocked-ingress" d="M 770 360 L 770 240" marker-end="url(#arrow-rose)" />
+          <text class="danger-text" x="775" y="300">[Distance &lt; Umbral]</text>
+
+          <!-- L2 -> L3 -->
+          <path class="edge-line animated-packet" data-from="state-l2" data-to="state-l3" d="M 860 400 L 940 400" marker-end="url(#arrow)" />
+          <text class="guard-text" x="875" y="392">[L2 Clean]</text>
+
+          <!-- L3 -> Blocked Ingress (with auto-learn) -->
+          <path class="edge-line-danger animated-packet-danger" data-from="state-l3" data-to="state-blocked-ingress" d="M 1030 360 Q 1030 200 900 200" marker-end="url(#arrow-rose)" />
+          <text class="danger-text" x="970" y="270">[L3 Threat = true]</text>
+
+          <!-- L3 -> Canary Attached (L4) -->
+          <path class="edge-line animated-packet" data-from="state-l3" data-to="state-l4" d="M 1120 400 L 1200 400" marker-end="url(#arrow)" />
+          <text class="guard-text" x="1135" y="392">[L3 Clean]</text>
+
+          <!-- Canary Attached -> LLM Flight -->
+          <path class="edge-line animated-packet" data-from="state-l4" data-to="state-flight" d="M 1290 440 L 1290 520" marker-end="url(#arrow)" />
+          <text class="transition-text" x="1300" y="480">forward_groq()</text>
+
+          <!-- LLM Flight -> L5 Egress -->
+          <path class="edge-line animated-packet" data-from="state-flight" data-to="state-l5" d="M 1200 560 L 1120 560" marker-end="url(#arrow)" />
+          <text class="transition-text" x="1135" y="552">on_response()</text>
+
+          <!-- L5 -> Quarantined (Canary Leaked) -->
+          <path class="edge-line-danger animated-packet-danger" data-from="state-l5" data-to="state-quarantine" d="M 1030 600 L 1030 690" marker-end="url(#arrow-rose)" />
+          <text class="danger-text" x="1040" y="650">[Canary Leaked == true]</text>
+
+          <!-- L5 -> Safe Dispatched (Clean & Scrubbed) -->
+          <path class="edge-line animated-packet" data-from="state-l5" data-to="state-clean" d="M 940 560 L 760 560" marker-end="url(#arrow-emerald)" stroke="#10b981" />
+          <text class="guard-text" x="785" y="552" fill="#10b981">[Canary Safe + PII Scrubbed]</text>
+        </g>
+      </svg>
+
+      <div class="archify-hud">
+        <button id="btn-zoom-in" class="hud-btn">+</button>
+        <button id="btn-zoom-out" class="hud-btn">−</button>
+        <button id="btn-reset" class="hud-btn">⟲</button>
+      </div>
+    </div>
+
+    <!-- Drawer -->
+    <aside id="archify-drawer" class="archify-drawer">
+      <div class="drawer-header">
+        <h3 id="drawer-node-title" class="drawer-title">Detalle del Estado</h3>
+        <button id="drawer-close" class="drawer-close">✕</button>
+      </div>
+      <div id="drawer-node-body" class="drawer-content"></div>
+    </aside>
+  </main>
+
+  <script src="archify.js"></script>
+  <script>
+    const metadataStore = {
+      'state-received': {
+        title: 'Estado: INGESTED',
+        description: 'La solicitud HTTP POST ha llegado al router y ha superado la validación sintáctica de Pydantic. Se captura el timestamp de inicio.',
+        io: 'Entrada: HTTP Request Payload -> Salida: Estructura interna de mensaje'
+      },
+      'state-l1': {
+        title: 'Estado: L1_HEURISTIC',
+        description: 'Filtro inicial en CPU. Se ejecuta el escáner de firmas estáticas y la función de entropía de Shannon. Si detecta anomalía, bifurca a BLOCKED_INGRESS.',
+        latency: '< 5 ms'
+      },
+      'state-l2': {
+        title: 'Estado: L2_VECTORIAL',
+        description: 'Se computa la representación densa del prompt y se realiza el cálculo de distancia coseno contra el corpus adversario en ChromaDB.',
+        latency: '< 50 ms'
+      },
+      'state-l3': {
+        title: 'Estado: L3_INTELLIGENCE',
+        description: 'El modelo clasificador defensivo procesa el prompt para discernir intenciones maliciosas complejas o simulaciones de roles.',
+        latency: '< 250 ms'
+      },
+      'state-l4': {
+        title: 'Estado: CANARY_ATTACHED',
+        description: 'Se genera un token UUIDv4 esteganográfico y se adhiere a las instrucciones de sistema antes de enviarlo al modelo externo.',
+        latency: '< 1 ms'
+      },
+      'state-flight': {
+        title: 'Estado: LLM_IN_FLIGHT',
+        description: 'Petición en tránsito hacia la infraestructura de aceleración LPU de Groq Cloud. El Gateway espera asíncronamente los tokens generados.',
+        latency: '150 - 600 ms'
+      },
+      'state-l5': {
+        title: 'Estado: EGRESS_SCANNING',
+        description: 'Se inspecciona la respuesta para certificar que el token canario no se haya filtrado y se anonimiza cualquier dato sensible detectado.',
+        latency: '< 15 ms'
+      },
+      'state-clean': {
+        title: 'Estado Terminal: CLEAN (HTTP 200)',
+        description: 'La petición fue completamente procesada de forma segura. Se emite la respuesta con métricas consolidadas hacia el cliente.',
+        latency: 'Total típico: 280 - 650 ms'
+      },
+      'state-blocked-ingress': {
+        title: 'Estado Terminal: BLOCKED_INGRESS (HTTP 403)',
+        description: 'Ataque neutralizado en la fase de entrada. Si fue detectado en L3, se dispara la inserción automática en ChromaDB para inmunidad futura.',
+        failureMode: 'Retorno 403 con mensaje de seguridad genérico.'
+      },
+      'state-quarantine': {
+        title: 'Estado Terminal: QUARANTINED_EGRESS',
+        description: 'Incidente crítico: el LLM reveló instrucciones del sistema o su token canario. Se confina la respuesta y se alerta al SOC vía Brevo.',
+        failureMode: 'Respuesta suprimida + Alerta SMTP'
+      }
+    };
+
+    new ArchifyViewer({
+      metadataStore: metadataStore
+    });
+  </script>
+</body>
+</html>

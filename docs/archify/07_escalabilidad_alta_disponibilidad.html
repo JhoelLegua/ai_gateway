@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Gateway - 07. Arquitectura de Escalabilidad y Alta Disponibilidad (HA)</title>
+  <link rel="stylesheet" href="archify.css">
+  <style>
+    .cluster-box {
+      fill: var(--bg-secondary);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      stroke-dasharray: 4, 4;
+      rx: 10;
+    }
+    .cluster-label {
+      font-size: 11px;
+      font-weight: 700;
+      fill: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .node-box {
+      fill: var(--bg-card);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      rx: 8;
+      transition: var(--transition);
+    }
+    .node-title {
+      font-size: 12px;
+      font-weight: 600;
+      fill: var(--text-primary);
+    }
+    .node-sub {
+      font-size: 10px;
+      fill: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+    .badge-rect {
+      rx: 3;
+    }
+    .badge-text {
+      font-size: 9px;
+      font-weight: 700;
+      fill: #ffffff;
+      text-anchor: middle;
+    }
+  </style>
+</head>
+<body>
+  <header class="archify-header">
+    <div class="archify-branding">
+      <span class="archify-badge">AI GATEWAY</span>
+      <span class="archify-title">07. Arquitectura de Escalabilidad, Concurrencia y Alta Disponibilidad</span>
+      <span class="archify-subtitle">Topología de Producción Multi-Worker, HPA y Resiliencia</span>
+    </div>
+    <div class="archify-controls">
+      <a href="index.html" target="_top" class="archify-btn btn-hub">← Hub Principal</a>
+      <button id="theme-toggle" class="archify-btn">Modo Claro</button>
+    </div>
+  </header>
+
+  <main class="archify-workspace">
+    <div class="archify-canvas-container">
+      <svg class="archify-svg" viewBox="0 0 1600 920" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+          </marker>
+          <marker id="arrow-rose" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+          </marker>
+          <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b" />
+          </marker>
+        </defs>
+
+        <g id="viewport">
+          <!-- TIER 1: BORDE, BALANCEO DE CARGA Y INGRESS -->
+          <g id="tier-edge">
+            <rect class="cluster-box" x="40" y="40" width="280" height="840" />
+            <text class="cluster-label" x="60" y="70">1. Edge & Balanceo de Carga</text>
+
+            <!-- Node: Cloudflare Edge -->
+            <g id="scale-edge-dns" class="node-group" transform="translate(60, 100)">
+              <rect class="node-box" width="240" height="80" stroke="#f59e0b" />
+              <rect class="badge-rect" x="12" y="12" width="75" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="49" y="24">EDGE / CDN</text>
+              <text class="node-title" x="12" y="48">Cloudflare Edge & DDoS</text>
+              <text class="node-sub" x="12" y="66">Terminación SSL & Anycast DNS</text>
+            </g>
+
+            <!-- Node: Ingress Controller NGINX -->
+            <g id="scale-ingress-lb" class="node-group" transform="translate(60, 240)">
+              <rect class="node-box" width="240" height="95" stroke="#10b981" />
+              <rect class="badge-rect" x="12" y="12" width="90" height="16" fill="#10b981" />
+              <text class="badge-text" x="57" y="24">LOAD BALANCER</text>
+              <text class="node-title" x="12" y="48">Ingress Controller / NGINX</text>
+              <text class="node-sub" x="12" y="66">Round-Robin & Least Connections</text>
+              <text class="node-sub" x="12" y="82" fill="#10b981">Rate-Limiting por IP y Token</text>
+            </g>
+
+            <!-- Node: Redis Semantic Cache -->
+            <g id="scale-redis-cache" class="node-group" transform="translate(60, 400)">
+              <rect class="node-box" width="240" height="95" stroke="#f43f5e" />
+              <rect class="badge-rect" x="12" y="12" width="85" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="54" y="24">DISTRIBUTED</text>
+              <text class="node-title" x="12" y="48">Redis Cache Cluster</text>
+              <text class="node-sub" x="12" y="66">Deduplicación de Prompts SHA-256</text>
+              <text class="node-sub" x="12" y="82" fill="#38bdf8">Cache de respuestas limpias (TTL)</text>
+            </g>
+          </g>
+
+          <!-- TIER 2: CLÚSTER DE GATEWAY WORKERS (STATELESS FASTAPI HPA) -->
+          <g id="tier-cluster">
+            <rect class="cluster-box" x="350" y="40" width="340" height="840" />
+            <text class="cluster-label" x="370" y="70">2. Clúster Stateless (FastAPI HPA)</text>
+
+            <!-- Node: Pod 1 -->
+            <g id="scale-gateway-pod1" class="node-group" transform="translate(370, 100)">
+              <rect class="node-box" width="300" height="85" stroke="#38bdf8" />
+              <rect class="badge-rect" x="12" y="12" width="60" height="16" fill="#38bdf8" />
+              <text class="badge-text" x="42" y="24">WORKER 1</text>
+              <text class="node-title" x="12" y="48">Gateway Node Pod #1</text>
+              <text class="node-sub" x="12" y="66">FastAPI + Uvicorn Async Loop</text>
+              <text class="node-sub" x="12" y="80" fill="#38bdf8">4 Workers Uvicorn en CPU</text>
+            </g>
+
+            <!-- Node: Pod 2 -->
+            <g id="scale-gateway-pod2" class="node-group" transform="translate(370, 220)">
+              <rect class="node-box" width="300" height="85" stroke="#38bdf8" />
+              <rect class="badge-rect" x="12" y="12" width="60" height="16" fill="#38bdf8" />
+              <text class="badge-text" x="42" y="24">WORKER 2</text>
+              <text class="node-title" x="12" y="48">Gateway Node Pod #2</text>
+              <text class="node-sub" x="12" y="66">FastAPI + Uvicorn Async Loop</text>
+              <text class="node-sub" x="12" y="80" fill="#38bdf8">Copia stateless idéntica</text>
+            </g>
+
+            <!-- Node: Pod N (HPA Autoscaling) -->
+            <g id="scale-gateway-podn" class="node-group" transform="translate(370, 340)">
+              <rect class="node-box" width="300" height="85" stroke="#a855f7" />
+              <rect class="badge-rect" x="12" y="12" width="70" height="16" fill="#a855f7" />
+              <text class="badge-text" x="47" y="24">HPA PODS</text>
+              <text class="node-title" x="12" y="48">Gateway Node Pod #N (Auto)</text>
+              <text class="node-sub" x="12" y="66">Horizontal Pod Autoscaler (HPA)</text>
+              <text class="node-sub" x="12" y="80" fill="#a855f7">Escala de 2 a 20 réplicas por CPU</text>
+            </g>
+
+            <!-- Node: Circuit Breaker Governor -->
+            <g id="scale-circuit-breaker" class="node-group" transform="translate(370, 480)">
+              <rect class="node-box" width="300" height="90" stroke="#f59e0b" />
+              <rect class="badge-rect" x="12" y="12" width="105" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="64" y="24">CIRCUIT BREAKER</text>
+              <text class="node-title" x="12" y="48">Gobernador de Resiliencia</text>
+              <text class="node-sub" x="12" y="66">Detección de fallos en LLMs externos</text>
+              <text class="node-sub" x="12" y="80" fill="#f59e0b">Failover automático hacia proveedor de respaldo</text>
+            </g>
+          </g>
+
+          <!-- TIER 3: CAPA DE PERSISTENCIA Y REPOSITORIOS DISTRIBUIDOS -->
+          <g id="tier-persistence">
+            <rect class="cluster-box" x="720" y="40" width="380" height="840" />
+            <text class="cluster-label" x="740" y="70">3. Persistencia Escalable & Vectorial</text>
+
+            <!-- Node: ChromaDB Clustered / Replicated -->
+            <g id="scale-chroma-cluster" class="node-group" transform="translate(740, 100)">
+              <rect class="node-box" width="340" height="95" stroke="#10b981" />
+              <rect class="badge-rect" x="12" y="12" width="100" height="16" fill="#10b981" />
+              <text class="badge-text" x="62" y="24">VECTOR CLUSTER</text>
+              <text class="node-title" x="12" y="48">ChromaDB Multi-Replica Read</text>
+              <text class="node-sub" x="12" y="66">Índices HNSW sincronizados en disco</text>
+              <text class="node-sub" x="12" y="82" fill="#10b981">Consultas paralelas de L2 sin contención</text>
+            </g>
+
+            <!-- Node: PostgreSQL Master (Write) -->
+            <g id="scale-pg-master" class="node-group" transform="translate(740, 240)">
+              <rect class="node-box" width="340" height="95" stroke="#a855f7" />
+              <rect class="badge-rect" x="12" y="12" width="95" height="16" fill="#a855f7" />
+              <text class="badge-text" x="59" y="24">PG PRIMARY</text>
+              <text class="node-title" x="12" y="48">PostgreSQL Master (Escrituras)</text>
+              <text class="node-sub" x="12" y="66">Particionamiento Range por fecha (AuditLogs)</text>
+              <text class="node-sub" x="12" y="82" fill="#38bdf8">Inserciones asíncronas vía connection pool</text>
+            </g>
+
+            <!-- Node: PostgreSQL Read Replicas -->
+            <g id="scale-pg-replicas" class="node-group" transform="translate(740, 380)">
+              <rect class="node-box" width="340" height="95" stroke="#3b82f6" />
+              <rect class="badge-rect" x="12" y="12" width="95" height="16" fill="#3b82f6" />
+              <text class="badge-text" x="59" y="24">PG REPLICAS</text>
+              <text class="node-title" x="12" y="48">PostgreSQL Replicas (Lectura)</text>
+              <text class="node-sub" x="12" y="66">Replicación física streaming WAL</text>
+              <text class="node-sub" x="12" y="82" fill="#10b981">Consultas del SOC y análisis Telescope</text>
+            </g>
+
+            <!-- Node: Message Broker / Queue (Celery / RabbitMQ) -->
+            <g id="scale-async-queue" class="node-group" transform="translate(740, 520)">
+              <rect class="node-box" width="340" height="95" stroke="#f59e0b" />
+              <rect class="badge-rect" x="12" y="12" width="95" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="59" y="24">ASYNC QUEUE</text>
+              <text class="node-title" x="12" y="48">Cola Asíncrona (RabbitMQ / Celery)</text>
+              <text class="node-sub" x="12" y="66">Desacopla alertas Brevo y procesamiento pesado</text>
+              <text class="node-sub" x="12" y="82" fill="#f59e0b">Garantiza latencia de chat inmune a SMTP</text>
+            </g>
+          </g>
+
+          <!-- TIER 4: ALTA DISPONIBILIDAD MULTI-PROVEEDOR LLM -->
+          <g id="tier-providers">
+            <rect class="cluster-box" x="1130" y="40" width="430" height="840" />
+            <text class="cluster-label" x="1150" y="70">4. Resiliencia Multi-Proveedor LLM</text>
+
+            <!-- Node: Groq Primary -->
+            <g id="scale-groq-primary" class="node-group" transform="translate(1150, 100)">
+              <rect class="node-box" width="390" height="95" stroke="#3b82f6" />
+              <rect class="badge-rect" x="12" y="12" width="105" height="16" fill="#3b82f6" />
+              <text class="badge-text" x="64" y="24">LLM PRIMARIO</text>
+              <text class="node-title" x="12" y="48">Groq Cloud LPU (US-East)</text>
+              <text class="node-sub" x="12" y="66">Llama-3.3-70b-versatile (Principal)</text>
+              <text class="node-sub" x="12" y="82" fill="#38bdf8">Throughput alto con latencia sub-segundo</text>
+            </g>
+
+            <!-- Node: Backup Provider (Multi-Region / Fallback) -->
+            <g id="scale-groq-backup" class="node-group" transform="translate(1150, 240)">
+              <rect class="node-box" width="390" height="95" stroke="#10b981" />
+              <rect class="badge-rect" x="12" y="12" width="105" height="16" fill="#10b981" />
+              <text class="badge-text" x="64" y="24">LLM FALLBACK</text>
+              <text class="node-title" x="12" y="48">Multi-Region / Secondary Provider</text>
+              <text class="node-sub" x="12" y="66">Groq US-West / Azure OpenAI / vLLM local</text>
+              <text class="node-sub" x="12" y="82" fill="#10b981">Conmutación automática ante rate-limit 429</text>
+            </g>
+
+            <!-- Node: Brevo SMTP Worker -->
+            <g id="scale-brevo-workers" class="node-group" transform="translate(1150, 380)">
+              <rect class="node-box" width="390" height="90" stroke="#f43f5e" />
+              <rect class="badge-rect" x="12" y="12" width="100" height="16" fill="#f43f5e" />
+              <text class="badge-text" x="62" y="24">ALERT WORKER</text>
+              <text class="node-title" x="12" y="48">Brevo Transactional SMTP Dispatchers</text>
+              <text class="node-sub" x="12" y="66">Consumo asíncrono con reintentos exponenciales</text>
+            </g>
+
+            <!-- Node: Telescope Central Aggregator -->
+            <g id="scale-telescope-central" class="node-group" transform="translate(1150, 520)">
+              <rect class="node-box" width="390" height="95" stroke="#f59e0b" />
+              <rect class="badge-rect" x="12" y="12" width="115" height="16" fill="#f59e0b" />
+              <text class="badge-text" x="69" y="24">OBSERVABILIDAD</text>
+              <text class="node-title" x="12" y="48">Telescope Central Metrics Engine</text>
+              <text class="node-sub" x="12" y="66">Consolidación multi-pod de latencias P50/P95/P99</text>
+              <text class="node-sub" x="12" y="82" fill="#f59e0b">Streaming SSE hacia dashboards conectados</text>
+            </g>
+          </g>
+
+          <!-- EDGES & SCALABILITY PATHS -->
+          <g id="scale-edges">
+            <!-- Cloudflare -> Ingress -->
+            <path class="edge-line animated-packet" data-from="scale-edge-dns" data-to="scale-ingress-lb" d="M 180 180 L 180 240" marker-end="url(#arrow)" />
+
+            <!-- Ingress -> Redis Cache Check -->
+            <path class="edge-line" data-from="scale-ingress-lb" data-to="scale-redis-cache" d="M 180 335 L 180 400" marker-end="url(#arrow-rose)" />
+
+            <!-- Ingress -> Gateway Pods (Load Distribution) -->
+            <path class="edge-line animated-packet" data-from="scale-ingress-lb" data-to="scale-gateway-pod1" d="M 300 287 Q 335 287 335 142 L 370 142" marker-end="url(#arrow)" />
+            <path class="edge-line animated-packet" data-from="scale-ingress-lb" data-to="scale-gateway-pod2" d="M 300 287 L 370 262" marker-end="url(#arrow)" />
+            <path class="edge-line animated-packet" data-from="scale-ingress-lb" data-to="scale-gateway-podn" d="M 300 287 Q 335 287 335 382 L 370 382" marker-end="url(#arrow)" />
+
+            <!-- Pods -> ChromaDB Cluster -->
+            <path class="edge-line animated-packet" data-from="scale-gateway-pod1" data-to="scale-chroma-cluster" d="M 670 142 L 740 142" marker-end="url(#arrow-emerald)" />
+
+            <!-- Pods -> Circuit Breaker -->
+            <path class="edge-line" data-from="scale-gateway-pod2" data-to="scale-circuit-breaker" d="M 520 305 L 520 480" marker-end="url(#arrow-amber)" />
+
+            <!-- Circuit Breaker -> Primary LLM -->
+            <path class="edge-line animated-packet-fast" data-from="scale-circuit-breaker" data-to="scale-groq-primary" d="M 670 525 Q 900 525 900 147 L 1150 147" marker-end="url(#arrow)" />
+
+            <!-- Circuit Breaker -> Fallback LLM (Failover) -->
+            <path class="edge-line" data-from="scale-circuit-breaker" data-to="scale-groq-backup" d="M 670 540 Q 920 540 920 287 L 1150 287" marker-end="url(#arrow-emerald)" stroke="#10b981" stroke-dasharray="4, 4" />
+
+            <!-- Pods -> PostgreSQL Master (Async Audit Log) -->
+            <path class="edge-line" data-from="scale-gateway-pod1" data-to="scale-pg-master" d="M 670 170 Q 700 170 700 287 L 740 287" marker-end="url(#arrow)" stroke-dasharray="4, 4" />
+
+            <!-- Master -> Read Replicas (Streaming WAL) -->
+            <path class="edge-line" data-from="scale-pg-master" data-to="scale-pg-replicas" d="M 910 335 L 910 380" marker-end="url(#arrow)" stroke="#3b82f6" />
+
+            <!-- Pods -> Async Queue (Decoupled Alarms) -->
+            <path class="edge-line animated-packet-danger" data-from="scale-gateway-pod2" data-to="scale-async-queue" d="M 670 290 Q 705 290 705 567 L 740 567" marker-end="url(#arrow-rose)" />
+
+            <!-- Async Queue -> Brevo Dispatcher -->
+            <path class="edge-line animated-packet-danger" data-from="scale-async-queue" data-to="scale-brevo-workers" d="M 1080 567 Q 1115 567 1115 425 L 1150 425" marker-end="url(#arrow-rose)" />
+
+            <!-- Pods -> Telescope Central Collector -->
+            <path class="edge-line" data-from="scale-gateway-podn" data-to="scale-telescope-central" d="M 670 400 Q 1100 400 1100 567 L 1150 567" marker-end="url(#arrow-amber)" stroke="#f59e0b" />
+          </g>
+        </g>
+      </svg>
+
+      <div class="archify-hud">
+        <button id="btn-zoom-in" class="hud-btn">+</button>
+        <button id="btn-zoom-out" class="hud-btn">−</button>
+        <button id="btn-reset" class="hud-btn">⟲</button>
+      </div>
+    </div>
+
+    <aside id="archify-drawer" class="archify-drawer">
+      <div class="drawer-header">
+        <h3 id="drawer-node-title" class="drawer-title">Detalle de Escalabilidad</h3>
+        <button id="drawer-close" class="drawer-close">✕</button>
+      </div>
+      <div id="drawer-node-body" class="drawer-content"></div>
+    </aside>
+  </main>
+
+  <script src="archify.js"></script>
+  <script>
+    const metadataStore = {
+      'scale-edge-dns': {
+        title: 'Cloudflare Edge & DDoS Shield',
+        description: 'Punto de entrada global mediante Anycast DNS. Filtra tráfico volumétrico, realiza terminación SSL/TLS y absorbe picos anómalos de conexión antes de alcanzar la infraestructura interna.',
+        latency: '< 5 ms'
+      },
+      'scale-ingress-lb': {
+        title: 'Ingress Controller / NGINX Load Balancer',
+        description: 'Distribuye equitativamente las peticiones entrantes entre los pods activos del AI Gateway utilizando algoritmos Least Connections y Round-Robin. Aplica límites de tasa (rate limiting) por IP y token de cliente.',
+        latency: '< 0.5 ms overhead'
+      },
+      'scale-redis-cache': {
+        title: 'Redis Cache Cluster (Deduplicación)',
+        description: 'Almacén clave-valor distribuido en memoria. Calcula hashes de prompts para responder instantáneamente ante consultas idénticas benignas repetidas, reduciendo el consumo de tokens y la latencia a 1ms.',
+        latency: '0.8 - 1.5 ms'
+      },
+      'scale-gateway-pod1': {
+        title: 'Gateway Pod #1 (Stateless Worker)',
+        file: 'app/main.py',
+        description: 'Contenedor Docker independiente sin estado. Ejecuta el pipeline de 5 capas de forma concurrente con FastAPI sobre 4 workers de Uvicorn.',
+        latency: 'Throughput ~ 350 req/sec por pod'
+      },
+      'scale-gateway-pod2': {
+        title: 'Gateway Pod #2 (Stateless Worker)',
+        file: 'app/main.py',
+        description: 'Réplica de alta disponibilidad idéntica. Si un pod se reinicia o falla por memoria, el balanceador redirige el tráfico al restante sin interrupción de servicio.',
+        failureMode: 'Tolerancia a fallos N+1'
+      },
+      'scale-gateway-podn': {
+        title: 'Autoscaling Horizontal (HPA)',
+        description: 'Horizontal Pod Autoscaler (Kubernetes). Monitorea el uso de CPU y la latencia P95. Escala automáticamente desde 2 pods base hasta 20 pods bajo ráfagas masivas de tráfico o ataques DoS.',
+        latency: 'Elasticidad dinámica en segundos'
+      },
+      'scale-circuit-breaker': {
+        title: 'Circuit Breaker Pattern (Resiliencia)',
+        file: 'app/services/llm_client.py',
+        description: 'Monitorea la tasa de error 5xx y timeouts hacia el proveedor primario (Groq). Si supera el 5% en 10 segundos, abre el circuito y redirige inmediatamente al proveedor de respaldo.',
+        mitre: 'Patrón de Tolerancia a Fallos e Integridad de Servicio'
+      },
+      'scale-chroma-cluster': {
+        title: 'ChromaDB Multi-Replica Read',
+        description: 'Almacenamiento vectorial replicado. Las consultas de similitud de la Capa 2 se distribuyen entre múltiples réplicas de solo lectura en disco, garantizando búsquedas de vecinos más cercanos en <20ms incluso bajo miles de usuarios concurrentes.',
+        latency: '5 - 20 ms'
+      },
+      'scale-pg-master': {
+        title: 'PostgreSQL Master (Escritura Particionada)',
+        description: 'Base de datos relacional primaria. Recibe inserciones asíncronas de auditoría con tablas particionadas por rangos de fecha (mensuales) para garantizar consultas rápidas a pesar de tener millones de registros.',
+        io: 'Write-Optimized Connection Pool'
+      },
+      'scale-pg-replicas': {
+        title: 'PostgreSQL Read Replicas (Lectura)',
+        description: 'Nodos secundarios sincronizados mediante replicación física en streaming (WAL). Absorben el 100% de las consultas analíticas del equipo SOC y del visor histórico de Telescope sin restar rendimiento a las escrituras en vivo.',
+        latency: '< 2 ms'
+      },
+      'scale-async-queue': {
+        title: 'Cola Asíncrona (RabbitMQ / Celery)',
+        description: 'Broker de mensajes distribuido. Cuando se detecta un incidente grave (como fuga de canario), el evento se encola y se procesa en segundo plano por trabajadores dedicados, garantizando que la respuesta HTTP al cliente no sufra demoras por envíos SMTP.',
+        latency: 'Encolado < 0.2 ms'
+      },
+      'scale-groq-primary': {
+        title: 'Groq Cloud LPU Primario (US-East)',
+        description: 'Acelerador hardware Language Processing Unit (LPU) en región Este. Procesa el 99% de las inferencias con máxima velocidad.',
+        latency: '150 - 500 ms'
+      },
+      'scale-groq-backup': {
+        title: 'Proveedor de Respaldo Multi-Región',
+        description: 'Región alternativa (Groq US-West o instancia Azure OpenAI / vLLM local). Se activa automáticamente vía Circuit Breaker ante contingencias de red o caídas de conectividad intercontinental.',
+        latency: 'Alta disponibilidad 99.99%'
+      },
+      'scale-brevo-workers': {
+        title: 'Workers de Despacho de Alertas Brevo',
+        description: 'Consumidores dedicados que leen de la cola asíncrona y envían los correos estructurados RFC 822 a los analistas de seguridad con reintentos exponenciales.',
+        failureMode: 'Reintentos automáticos con Dead Letter Queue (DLQ)'
+      },
+      'scale-telescope-central': {
+        title: 'Agregador Central de Telemetría Telescope',
+        description: 'Consolida las métricas recogidas por todos los pods stateless, calculando los percentiles P50, P95 y P99 globales y sirviendo el canal Server-Sent Events (SSE) a los tableros de monitoreo.',
+        latency: 'Actualización en tiempo real (1000ms sync)'
+      }
+    };
+
+    new ArchifyViewer({
+      metadataStore: metadataStore
+    });
+  </script>
+</body>
+</html>

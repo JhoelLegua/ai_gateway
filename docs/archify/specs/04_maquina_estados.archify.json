@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tt-a1i/archify/main/schemas/lifecycle.schema.json",
+  "meta": {
+    "title": "AI Gateway - Ciclo de Vida y Máquina de Estados",
+    "description": "Autómata de estados finitos (FSM) para el procesamiento de peticiones y tokens canario",
+    "version": "2.17.0",
+    "type": "lifecycle",
+    "quality_profile": "showcase"
+  },
+  "states": [
+    { "id": "INIT", "label": "INICIAL", "type": "initial" },
+    { "id": "INGESTED", "label": "INGESTED", "description": "Payload JSON validado con Pydantic" },
+    { "id": "L1_HEURISTIC", "label": "L1_HEURISTIC", "description": "Evaluando Regex y entropía Shannon" },
+    { "id": "L2_VECTORIAL", "label": "L2_VECTORIAL", "description": "Consultando ChromaDB coseno" },
+    { "id": "L3_INTELLIGENCE", "label": "L3_INTELLIGENCE", "description": "Inferencia de clasificador LLM defensivo" },
+    { "id": "CANARY_ATTACHED", "label": "CANARY_ATTACHED", "description": "Token secreto UUIDv4 inyectado (L4)" },
+    { "id": "LLM_IN_FLIGHT", "label": "LLM_IN_FLIGHT", "description": "Petición en tránsito hacia Groq Cloud LPU" },
+    { "id": "EGRESS_SCANNING", "label": "EGRESS_SCANNING", "description": "Búsqueda de token canario y anonimización PII" },
+    { "id": "CLEAN", "label": "CLEAN", "type": "terminal_success", "description": "HTTP 200 OK despachado al cliente" },
+    { "id": "BLOCKED_INGRESS", "label": "BLOCKED_INGRESS", "type": "terminal_failure", "description": "HTTP 403 Forbidden devuelto" },
+    { "id": "QUARANTINED_EGRESS", "label": "QUARANTINED_EGRESS", "type": "terminal_failure", "description": "Fuga detectada + Alerta Brevo enviada" }
+  ],
+  "transitions": [
+    { "from": "INIT", "to": "INGESTED", "event": "HTTP POST /chat" },
+    { "from": "INGESTED", "to": "L1_HEURISTIC", "event": "eval()" },
+    { "from": "L1_HEURISTIC", "to": "BLOCKED_INGRESS", "guard": "L1_Match || Entropy > 4.8" },
+    { "from": "L1_HEURISTIC", "to": "L2_VECTORIAL", "guard": "L1_Clean" },
+    { "from": "L2_VECTORIAL", "to": "BLOCKED_INGRESS", "guard": "Distance < Umbral" },
+    { "from": "L2_VECTORIAL", "to": "L3_INTELLIGENCE", "guard": "L2_Clean" },
+    { "from": "L3_INTELLIGENCE", "to": "BLOCKED_INGRESS", "guard": "L3_Threat == true", "action": "Trigger Auto-learning Chroma" },
+    { "from": "L3_INTELLIGENCE", "to": "CANARY_ATTACHED", "guard": "L3_Clean" },
+    { "from": "CANARY_ATTACHED", "to": "LLM_IN_FLIGHT", "event": "forward_groq()" },
+    { "from": "LLM_IN_FLIGHT", "to": "EGRESS_SCANNING", "event": "on_response()" },
+    { "from": "EGRESS_SCANNING", "to": "QUARANTINED_EGRESS", "guard": "Canary_Leaked == true", "action": "Brevo Alert + Quarantine" },
+    { "from": "EGRESS_SCANNING", "to": "CLEAN", "guard": "Canary_Safe", "action": "Deliver 200 + PII Scrubbed" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tt-a1i/archify/main/schemas/workflow.schema.json",
+  "meta": {
+    "title": "AI Gateway - Arquitectura de Observabilidad Telescope y Telemetría",
+    "description": "Pipeline de telemetría de alta frecuencia: intercepción, búfer circular sin bloqueo y streaming SSE hacia el HUD",
+    "version": "2.17.0",
+    "type": "workflow",
+    "quality_profile": "showcase"
+  },
+  "steps": [
+    { "id": "t1_interceptor", "label": "Interceptores time.perf_counter()", "layer": "Pipeline Execution" },
+    { "id": "t2_emitter", "label": "Emisión de Eventos de Seguridad", "layer": "Security Exceptions" },
+    { "id": "t3_collector", "label": "MetricsCollector (Singleton)", "layer": "In-Memory Hub" },
+    { "id": "t4_deque", "label": "collections.deque(maxlen=1000)", "layer": "Ring Buffer" },
+    { "id": "t5_aggregator", "label": "Cálculo de Percentiles (P50, P95, P99)", "layer": "Analytics Engine" },
+    { "id": "t6_sse", "label": "Streaming SSE /api/v1/metrics/stream", "layer": "Transport Channel" },
+    { "id": "t7_hud", "label": "Telescope Dashboard HUD", "layer": "Presentation" },
+    { "id": "t8_stress", "label": "StressTestRunner Synthetic Load", "layer": "Validation Harness" }
+  ]
+}

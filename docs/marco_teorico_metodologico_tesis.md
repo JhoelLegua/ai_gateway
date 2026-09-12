@@ -290,6 +290,27 @@ graph TD
     end
 ```
 
+### 5.4. Especificación y Modelado Formal de la Arquitectura del Sistema
+
+Para el diseño técnico, la sustentación ante jurados y la documentación reproducible del sistema, se implementó una suite completa de 7 diagramas interactivos autónomos en **HTML5 + SVG nativo vectorial** con soporte para exportación en alta resolución (PNG/SVG) para el documento impreso de la tesis y navegación interactiva (zoom, pan, resaltado de dependencias *upstream/downstream* y conmutador de temas Oscuro/Claro):
+
+1. **Diagrama de Componentes y Descomposición Clean Architecture (`01_componentes.html`)**:
+   - Mapeo exhaustivo de dependencias entre interfaces (Chat y Telescope), routers FastAPI, orquestador de inspección perimetral, las 5 capas de defensa, bases de datos (PostgreSQL y ChromaDB) y servicios externos (Groq Cloud LLM y Brevo SMTP).
+2. **Diagrama de Flujo de Datos y Pipeline de Inspección (`02_flujo_pipeline.html`)**:
+   - Trazabilidad paso a paso del prompt: Ingress -> L1 (Heurística) -> L2 (Similitud Coseno) -> L3 (Razonamiento Defensivo) -> L4 (Esteganografía Canario) -> Inferencia LLM -> L5 (Anonimización Egress) -> Despacho y bucle de inmunidad adaptativa.
+3. **Diagrama de Secuencia Temporal Interactivo (`03_secuencia_peticion.html`)**:
+   - Líneas de vida temporales con conmutador dinámico de escenarios: Flujo Legítimo (Happy Path 200 OK), Bloqueo Ingress L3 con Auto-aprendizaje en ChromaDB, y Exfiltración de Instrucciones detectada por Canario en L5.
+4. **Diagrama de Ciclo de Vida y Máquina de Estados FSM (`04_maquina_estados.html`)**:
+   - Modelado formal del autómata de estados finitos que gobierna el ciclo de vida de la petición y los tokens canario (`INGESTED`, `EVALUATING`, `CANARY_ATTACHED`, `LLM_IN_FLIGHT`, `EGRESS_SCANNING`, `CLEAN`, `BLOCKED`, `QUARANTINED`).
+5. **Diagrama del Pipeline de Observabilidad y Telemetría Telescope (`05_telescope_observabilidad.html`)**:
+   - Desacoplamiento arquitectónico de la telemetría: intercepción `time.perf_counter()`, búfer atómico circular `collections.deque(maxlen=1000)` en memoria, cómputo instantáneo de percentiles (P50/P95/P99), emisión SSE y laboratorio de estrés sintético.
+6. **Diagrama de Diseño Arquitectónico Global y Patrones de Software (`06_diseno_sistema.html`)**:
+   - Límites de confianza perimetral (Trust Boundaries), autenticación RBAC en tiempo constante O(1), patrones GoF (*Chain of Responsibility, Adapter, Singleton, Repository*) y los 4 Registros de Decisiones de Arquitectura (ADRs).
+7. **Diagrama de Escalabilidad, Concurrencia y Alta Disponibilidad (`07_escalabilidad_alta_disponibilidad.html`)**:
+   - Topología de producción elástica: Edge con terminación TLS y DDoS, clúster de pods stateless con autoscaling horizontal (HPA), particionamiento de bases de datos relacionales, multi-réplica vectorial y Circuit Breaker para resiliencia multi-proveedor LLM.
+
+*Acceso Local y Remoto:* La suite puede abrirse directamente sin conexión en cualquier navegador abriendo `docs/archify/index.html` o consultarse en tiempo de ejecución del backend en `http://localhost:8000/architecture`.
+
 ---
 
 ## 6. Diseño Experimental y Validación Empírica con Telescope

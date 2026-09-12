@@ -1,0 +1,195 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tt-a1i/archify/main/schemas/architecture.schema.json",
+  "meta": {
+    "title": "AI Gateway Perimetral - Mapa de Arquitectura de Componentes",
+    "description": "Descomposición Clean Architecture con capas de presentación, routers FastAPI, núcleo de inspección de 5 capas, bases de datos y proveedores externos",
+    "version": "2.17.0",
+    "type": "architecture",
+    "quality_profile": "showcase",
+    "theme_support": ["dark", "light"]
+  },
+  "clusters": [
+    {
+      "id": "cluster-presentation",
+      "title": "Capa de Presentación & Clientes",
+      "nodes": ["chat-ui", "telescope-ui", "stress-harness"]
+    },
+    {
+      "id": "cluster-transport",
+      "title": "Capa de Transporte (FastAPI)",
+      "nodes": ["router-chat", "router-metrics", "router-stress", "app-main"]
+    },
+    {
+      "id": "cluster-core",
+      "title": "Núcleo de Inspección Perimetral",
+      "nodes": ["pipeline-orchestrator", "layer-l1", "layer-l2", "layer-l3", "layer-l4", "layer-l5", "metrics-collector"]
+    },
+    {
+      "id": "cluster-external",
+      "title": "Servicios Externos & Persistencia",
+      "nodes": ["groq-llm", "brevo-smtp", "postgres-db", "chroma-db"]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "chat-ui",
+      "label": "Cliente Web de Chat",
+      "role": "frontend",
+      "file": "frontend/index.html",
+      "description": "SPA cliente para interactuar con el modelo a través del Gateway seguro",
+      "latency": "< 10ms"
+    },
+    {
+      "id": "telescope-ui",
+      "label": "Telescope HUD",
+      "role": "monitoring",
+      "file": "frontend/telescope/index.html",
+      "description": "Consola en tiempo real de telemetría, latencias P50/P95/P99 y tasas de bloqueo",
+      "latency": "1000ms SSE sync"
+    },
+    {
+      "id": "stress-harness",
+      "label": "Generador de Estrés",
+      "role": "benchmark",
+      "file": "app/services/stress_test.py",
+      "description": "Motor de pruebas de carga concurrente sintética"
+    },
+    {
+      "id": "router-chat",
+      "label": "/api/v1/chat",
+      "role": "router",
+      "file": "app/api/v1/chat.py",
+      "description": "Endpoint principal de inferencia LLM con inspección multi-capa",
+      "latency": "< 1ms overhead"
+    },
+    {
+      "id": "router-metrics",
+      "label": "/api/v1/metrics",
+      "role": "router",
+      "file": "app/api/v1/metrics.py",
+      "description": "Endpoints REST y SSE de telemetría instantánea",
+      "latency": "< 2ms"
+    },
+    {
+      "id": "router-stress",
+      "label": "/api/v1/stress-test",
+      "role": "router",
+      "file": "app/api/v1/stress_test.py",
+      "description": "Disparador asíncrono de pruebas de benchmarking"
+    },
+    {
+      "id": "app-main",
+      "label": "FastAPI Core App",
+      "role": "core",
+      "file": "app/main.py",
+      "description": "Ciclos de vida lifespan, middlewares y montaje de rutas"
+    },
+    {
+      "id": "pipeline-orchestrator",
+      "label": "InspectionPipeline",
+      "role": "orchestrator",
+      "file": "app/core/pipeline.py",
+      "description": "Coordinador de inspección perimetral con cortocircuito rápido"
+    },
+    {
+      "id": "layer-l1",
+      "label": "L1: Heurística & Entropía",
+      "role": "security-layer",
+      "file": "app/core/layers/l1_heuristic.py",
+      "description": "Filtro rápido sin tokens: Regex de inyecciones y entropía de Shannon",
+      "latency": "< 5ms",
+      "mitre": "AML.T0051, AML.T0054"
+    },
+    {
+      "id": "layer-l2",
+      "label": "L2: Similitud Vectorial",
+      "role": "security-layer",
+      "file": "app/core/layers/l2_vectorial.py",
+      "description": "Embeddings densos all-MiniLM-L6-v2 y vecinos más cercanos en ChromaDB",
+      "latency": "< 50ms",
+      "mitre": "AML.T0054"
+    },
+    {
+      "id": "layer-l3",
+      "label": "L3: Inteligencia Defensiva",
+      "role": "security-layer",
+      "file": "app/core/layers/l3_intelligence.py",
+      "description": "Clasificador LLM defensivo con salida JSON estructurada e inmunidad adaptativa",
+      "latency": "< 250ms",
+      "mitre": "AML.T0054"
+    },
+    {
+      "id": "layer-l4",
+      "label": "L4: Inyección Canarios",
+      "role": "security-layer",
+      "file": "app/core/layers/l4_canary.py",
+      "description": "Inyección de UUIDv4 esteganográfico como trampa de fuga de prompt",
+      "latency": "< 1ms",
+      "mitre": "AML.T0056"
+    },
+    {
+      "id": "layer-l5",
+      "label": "L5: Egreso & Anonimización",
+      "role": "security-layer",
+      "file": "app/core/layers/l5_egress.py",
+      "description": "Detección de canarios fugados y enmascaramiento regex de PII",
+      "latency": "< 15ms",
+      "mitre": "OWASP LLM06"
+    },
+    {
+      "id": "metrics-collector",
+      "label": "MetricsCollector",
+      "role": "telemetry",
+      "file": "app/services/metrics.py",
+      "description": "Búfer circular collections.deque(maxlen=1000) thread-safe sin contención",
+      "latency": "< 0.05ms"
+    },
+    {
+      "id": "groq-llm",
+      "label": "Groq Cloud LLM",
+      "role": "provider",
+      "file": "api.groq.com",
+      "description": "Aceleradores LPU ejecutando Llama-3.3-70b-versatile",
+      "latency": "150 - 600ms"
+    },
+    {
+      "id": "brevo-smtp",
+      "label": "Brevo Transactional SMTP",
+      "role": "alerting",
+      "file": "app/services/email_notifier.py",
+      "description": "Envío de alertas de incidentes críticos de seguridad al SOC"
+    },
+    {
+      "id": "postgres-db",
+      "label": "PostgreSQL Database",
+      "role": "database",
+      "file": "app/db/session.py",
+      "description": "Persistencia inmutable de AuditLog, IncidentRegistry y Settings"
+    },
+    {
+      "id": "chroma-db",
+      "label": "ChromaDB Vector Store",
+      "role": "vector-store",
+      "file": "chroma_db/",
+      "description": "Índice de vectores adversarios de 384 dimensiones para L2"
+    }
+  ],
+  "edges": [
+    { "from": "chat-ui", "to": "router-chat", "protocol": "HTTP/REST", "payload": "ChatRequest" },
+    { "from": "telescope-ui", "to": "router-metrics", "protocol": "SSE/REST", "payload": "MetricsSnapshot" },
+    { "from": "stress-harness", "to": "router-stress", "protocol": "HTTP/REST", "payload": "StressConfig" },
+    { "from": "router-chat", "to": "pipeline-orchestrator", "protocol": "Internal Call" },
+    { "from": "router-metrics", "to": "metrics-collector", "protocol": "Memory Read" },
+    { "from": "pipeline-orchestrator", "to": "layer-l1", "protocol": "Evaluate L1" },
+    { "from": "layer-l1", "to": "layer-l2", "protocol": "Pass Clean L1" },
+    { "from": "layer-l2", "to": "chroma-db", "protocol": "Cosine Nearest Neighbor" },
+    { "from": "layer-l2", "to": "layer-l3", "protocol": "Pass Clean L2" },
+    { "from": "layer-l3", "to": "groq-llm", "protocol": "Guard Classification Inference" },
+    { "from": "layer-l3", "to": "layer-l4", "protocol": "Pass Clean L3" },
+    { "from": "layer-l4", "to": "groq-llm", "protocol": "Forward Stamped Prompt" },
+    { "from": "groq-llm", "to": "layer-l5", "protocol": "Raw Response Stream" },
+    { "from": "layer-l5", "to": "brevo-smtp", "protocol": "Trigger Alert on Canary Leak" },
+    { "from": "pipeline-orchestrator", "to": "postgres-db", "protocol": "Async AuditLog" },
+    { "from": "pipeline-orchestrator", "to": "metrics-collector", "protocol": "Push Latency Metrics" }
+  ]
+}

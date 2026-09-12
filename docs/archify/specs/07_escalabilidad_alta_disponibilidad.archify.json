@@ -1,0 +1,49 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tt-a1i/archify/main/schemas/architecture.schema.json",
+  "meta": {
+    "title": "AI Gateway - Arquitectura de Escalabilidad, Concurrencia y Alta Disponibilidad",
+    "description": "Topología elástica de producción: Edge, Ingress NGINX, clúster de pods stateless con HPA, réplicas de bases de datos y circuit breaker multi-proveedor",
+    "version": "2.17.0",
+    "type": "architecture",
+    "quality_profile": "showcase"
+  },
+  "clusters": [
+    {
+      "id": "tier-edge",
+      "title": "Edge & Balanceo de Carga",
+      "nodes": ["edge-dns", "ingress-lb", "redis-cache"]
+    },
+    {
+      "id": "tier-cluster",
+      "title": "Clúster Stateless (FastAPI HPA)",
+      "nodes": ["gateway-pod1", "gateway-pod2", "gateway-podn", "circuit-breaker"]
+    },
+    {
+      "id": "tier-persistence",
+      "title": "Persistencia Escalable & Vectorial",
+      "nodes": ["chroma-cluster", "pg-master", "pg-replicas", "async-queue"]
+    },
+    {
+      "id": "tier-providers",
+      "title": "Resiliencia Multi-Proveedor LLM",
+      "nodes": ["groq-primary", "groq-backup", "brevo-workers", "telescope-central"]
+    }
+  ],
+  "nodes": [
+    { "id": "edge-dns", "label": "Cloudflare Edge & DDoS Shield", "role": "cdn" },
+    { "id": "ingress-lb", "label": "Ingress Controller / NGINX", "role": "load-balancer" },
+    { "id": "redis-cache", "label": "Redis Cache Cluster", "role": "cache" },
+    { "id": "gateway-pod1", "label": "Gateway Node Pod #1", "role": "stateless-worker" },
+    { "id": "gateway-pod2", "label": "Gateway Node Pod #2", "role": "stateless-worker" },
+    { "id": "gateway-podn", "label": "Gateway Node Pod #N (HPA)", "role": "autoscaler" },
+    { "id": "circuit-breaker", "label": "Circuit Breaker Governor", "role": "resilience" },
+    { "id": "chroma-cluster", "label": "ChromaDB Multi-Replica Read", "role": "vector-cluster" },
+    { "id": "pg-master", "label": "PostgreSQL Master (Escrituras)", "role": "database-primary" },
+    { "id": "pg-replicas", "label": "PostgreSQL Read Replicas", "role": "database-replica" },
+    { "id": "async-queue", "label": "Cola Asíncrona (RabbitMQ/Celery)", "role": "broker" },
+    { "id": "groq-primary", "label": "Groq Cloud LPU Primario (US-East)", "role": "provider" },
+    { "id": "groq-backup", "label": "Proveedor de Respaldo Multi-Región", "role": "fallback" },
+    { "id": "brevo-workers", "label": "Workers de Alertas Brevo SMTP", "role": "alerting" },
+    { "id": "telescope-central", "label": "Telescope Central Metrics Engine", "role": "observability" }
+  ]
+}

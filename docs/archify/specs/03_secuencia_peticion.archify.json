@@ -1,0 +1,52 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tt-a1i/archify/main/schemas/sequence.schema.json",
+  "meta": {
+    "title": "AI Gateway - Diagrama de Secuencia Temporal Interactivo",
+    "description": "Secuencia de mensajes asíncronos y líneas de vida para peticiones legítimas, bloqueos perimetrales y fugas de canario",
+    "version": "2.17.0",
+    "type": "sequence",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "client", "label": "Cliente HTTP", "role": "actor" },
+    { "id": "router", "label": "FastAPI Router", "role": "gateway" },
+    { "id": "pipeline", "label": "InspectionPipeline", "role": "orchestrator" },
+    { "id": "layers", "label": "Capas L1-L4", "role": "inspectors" },
+    { "id": "groq", "label": "Groq Cloud LLM", "role": "external-service" },
+    { "id": "l5", "label": "Capa L5 Egreso", "role": "egress-filter" },
+    { "id": "audit", "label": "Auditoría & Métricas", "role": "persistence" }
+  ],
+  "scenarios": [
+    {
+      "id": "happy-path",
+      "title": "Flujo Seguro (HTTP 200)",
+      "messages": [
+        { "from": "client", "to": "router", "label": "POST /api/v1/chat (prompt)", "type": "sync" },
+        { "from": "router", "to": "pipeline", "label": "execute_ingress()", "type": "call" },
+        { "from": "pipeline", "to": "layers", "label": "Evaluar L1, L2, L3 [PASS]", "type": "call" },
+        { "from": "pipeline", "to": "layers", "label": "L4: Inyectar Canario UUIDv4", "type": "call" },
+        { "from": "pipeline", "to": "groq", "label": "Inferencia LLM (Llama-3.3-70b)", "type": "async_call" },
+        { "from": "groq", "to": "pipeline", "label": "Retorno de respuesta cruda", "type": "return" },
+        { "from": "pipeline", "to": "l5", "label": "L5: No fuga canario + Scrub PII", "type": "call" },
+        { "from": "pipeline", "to": "audit", "label": "Insert AuditLog & Update Deque", "type": "async" },
+        { "from": "pipeline", "to": "router", "label": "PipelineResult(status=PASSED)", "type": "return" },
+        { "from": "router", "to": "client", "label": "HTTP 200 OK + Telemetría", "type": "reply" }
+      ]
+    },
+    {
+      "id": "blocked-l3",
+      "title": "Bloqueo en L3 con Inmunidad Adaptativa",
+      "messages": [
+        { "from": "client", "to": "router", "label": "POST /api/v1/chat (jailbreak)", "type": "sync" },
+        { "from": "router", "to": "pipeline", "label": "execute_ingress()", "type": "call" },
+        { "from": "pipeline", "to": "layers", "label": "L1: PASS (sintáctico limpio)", "type": "call" },
+        { "from": "pipeline", "to": "layers", "label": "L2: PASS (distancia cos > umbral)", "type": "call" },
+        { "from": "pipeline", "to": "layers", "label": "L3: THREAT_DETECTED (Jailbreak)", "type": "exception" },
+        { "from": "layers", "to": "layers", "label": "Auto-learning: Insert vector into ChromaDB (L2)", "type": "internal" },
+        { "from": "pipeline", "to": "audit", "label": "Log Security Incident (L3)", "type": "async" },
+        { "from": "pipeline", "to": "router", "label": "SecurityException(L3_INTELLIGENCE)", "type": "error" },
+        { "from": "router", "to": "client", "label": "HTTP 403 Forbidden", "type": "reply" }
+      ]
+    }
+  ]
+}

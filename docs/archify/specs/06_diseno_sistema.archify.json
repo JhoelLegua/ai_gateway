@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tt-a1i/archify/main/schemas/architecture.schema.json",
+  "meta": {
+    "title": "AI Gateway - Diseño Arquitectónico Global y Patrones de Software",
+    "description": "Límites de confianza, descomposición Clean Architecture, patrones GoF (Chain of Responsibility, Adapter, Singleton, Repository) y ADRs",
+    "version": "2.17.0",
+    "type": "architecture",
+    "quality_profile": "showcase"
+  },
+  "clusters": [
+    {
+      "id": "cluster-boundary",
+      "title": "Límite de Confianza y RBAC",
+      "nodes": ["client-app", "admin-user", "rbac-guard", "adr-decisions"]
+    },
+    {
+      "id": "cluster-application",
+      "title": "Capa de Aplicación & Patrones GoF",
+      "nodes": ["app-factory", "chain-orchestrator", "adapter-provider", "singleton-settings"]
+    },
+    {
+      "id": "cluster-domain",
+      "title": "Capa de Dominio (Núcleo de Defensa)",
+      "nodes": ["layer-l1-domain", "layer-l2-domain", "layer-l3-domain", "layer-l4-domain", "layer-l5-domain", "immunity-loop"]
+    },
+    {
+      "id": "cluster-infrastructure",
+      "title": "Infraestructura & Repositorios",
+      "nodes": ["groq-infra", "chroma-infra", "postgres-repo", "brevo-infra", "telescope-ring"]
+    }
+  ],
+  "nodes": [
+    { "id": "client-app", "label": "App Consumidora", "role": "client" },
+    { "id": "admin-user", "label": "Oficial SOC / Auditor", "role": "admin" },
+    { "id": "rbac-guard", "label": "Guardián RBAC O(1)", "role": "security" },
+    { "id": "adr-decisions", "label": "Architecture Decision Records", "role": "docs" },
+    { "id": "app-factory", "label": "Application Factory & Lifespan", "role": "factory" },
+    { "id": "chain-orchestrator", "label": "Chain of Responsibility", "role": "orchestrator" },
+    { "id": "adapter-provider", "label": "Adapter / Proxy LLM", "role": "adapter" },
+    { "id": "singleton-settings", "label": "Singleton Configuration", "role": "singleton" },
+    { "id": "layer-l1-domain", "label": "Capa L1: Heurística & Entropía", "role": "layer" },
+    { "id": "layer-l2-domain", "label": "Capa L2: Similitud Vectorial", "role": "layer" },
+    { "id": "layer-l3-domain", "label": "Capa L3: Red Neuronal DeBERTa", "role": "layer" },
+    { "id": "layer-l4-domain", "label": "Capa L4: Canarios Esteganográficos", "role": "layer" },
+    { "id": "layer-l5-domain", "label": "Capa L5: Egress & Anonimización PII", "role": "layer" },
+    { "id": "immunity-loop", "label": "Inmunidad Adaptativa", "role": "feedback" },
+    { "id": "groq-infra", "label": "Groq Cloud LPU", "role": "external" },
+    { "id": "chroma-infra", "label": "ChromaDB HNSW", "role": "vector-store" },
+    { "id": "postgres-repo", "label": "PostgreSQL Repository", "role": "database" },
+    { "id": "brevo-infra", "label": "Brevo Transactional SMTP", "role": "alerting" },
+    { "id": "telescope-ring", "label": "Telescope Ring Buffer", "role": "telemetry" }
+  ]
+}

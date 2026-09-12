@@ -191,6 +191,39 @@ def create_app() -> FastAPI:
     else:
         logger.warning("Frontend directory not found at ./frontend")
 
+    # -----------------------------------------------------------------------
+    # Archify Architecture Explorer Static Files & Redirect
+    # -----------------------------------------------------------------------
+    archify_path = Path("./docs/archify")
+    if archify_path.exists():
+        app.mount("/archify", StaticFiles(directory=str(archify_path), html=True), name="archify")
+
+    @app.get("/architecture", include_in_schema=False)
+    async def architecture_redirect():
+        """Convenience redirect to the Interactive Architecture Suite."""
+        return RedirectResponse(url="/archify/")
+
+    # -----------------------------------------------------------------------
+    # Direct Markdown Documentation Endpoints for Thesis & Technical Specs
+    # -----------------------------------------------------------------------
+    @app.get("/{filename}.md", include_in_schema=False)
+    async def serve_markdown(filename: str):
+        """Serve project markdown files directly for thesis inspection."""
+        from fastapi import HTTPException
+        from fastapi.responses import FileResponse
+
+        file_candidates = [
+            Path(f"./docs/{filename}.md"),
+            Path(f"./{filename}.md")
+        ]
+        for candidate in file_candidates:
+            if candidate.exists() and candidate.is_file():
+                return FileResponse(
+                    path=candidate,
+                    media_type="text/markdown; charset=utf-8"
+                )
+        raise HTTPException(status_code=404, detail=f"Documentation file {filename}.md not found")
+
     return app
 
 

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Gateway - 05. Arquitectura de Observabilidad Telescope y Telemetría</title>
+  <link rel="stylesheet" href="archify.css">
+  <style>
+    .telemetry-cluster {
+      fill: var(--bg-secondary);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      rx: 10;
+    }
+    .cluster-title {
+      font-size: 11px;
+      font-weight: 700;
+      fill: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .node-box {
+      fill: var(--bg-card);
+      stroke: var(--border-subtle);
+      stroke-width: 1.5;
+      rx: 8;
+      transition: var(--transition);
+    }
+    .node-title {
+      font-size: 12px;
+      font-weight: 600;
+      fill: var(--text-primary);
+    }
+    .node-sub {
+      font-size: 10px;
+      fill: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+    .metric-badge {
+      rx: 4;
+    }
+    .metric-badge-text {
+      font-size: 9px;
+      font-weight: 700;
+      fill: #ffffff;
+      text-anchor: middle;
+    }
+  </style>
+</head>
+<body>
+  <header class="archify-header">
+    <div class="archify-branding">
+      <span class="archify-badge">AI GATEWAY</span>
+      <span class="archify-title">05. Arquitectura de Observabilidad Telescope y Motor de Telemetría</span>
+      <span class="archify-subtitle">Métricas Atómicas en Tiempo Real y Pruebas de Estrés</span>
+    </div>
+    <div class="archify-controls">
+      <a href="index.html" target="_top" class="archify-btn btn-hub">← Hub Principal</a>
+      <button id="theme-toggle" class="archify-btn">Modo Claro</button>
+    </div>
+  </header>
+
+  <main class="archify-workspace">
+    <div class="archify-canvas-container">
+      <svg class="archify-svg" viewBox="0 0 1500 900" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#a855f7" />
+          </marker>
+          <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b" />
+          </marker>
+        </defs>
+
+        <g id="viewport">
+          <!-- CLUSTER 1: GENERACIÓN DE EVENTOS -->
+          <g id="cluster-source">
+            <rect class="telemetry-cluster" x="40" y="40" width="300" height="820" />
+            <text class="cluster-title" x="60" y="70">1. Fuentes de Métricas & Interceptores</text>
+
+            <!-- Node: Latency Interceptor -->
+            <g id="node-interceptor" class="node-group" transform="translate(60, 100)">
+              <rect class="node-box" width="260" height="80" stroke="#38bdf8" />
+              <rect class="metric-badge" x="12" y="12" width="70" height="16" fill="#38bdf8" />
+              <text class="metric-badge-text" x="47" y="24">TIMESTAMP</text>
+              <text class="node-title" x="12" y="48">Intercepción time.perf_counter()</text>
+              <text class="node-sub" x="12" y="66">Delta t0 -> tn por capa</text>
+            </g>
+
+            <!-- Node: Security Event Emitter -->
+            <g id="node-sec-emitter" class="node-group" transform="translate(60, 240)">
+              <rect class="node-box" width="260" height="80" stroke="#f43f5e" />
+              <rect class="metric-badge" x="12" y="12" width="60" height="16" fill="#f43f5e" />
+              <text class="metric-badge-text" x="42" y="24">SECURITY</text>
+              <text class="node-title" x="12" y="48">Emisor de Eventos de Bloqueo</text>
+              <text class="node-sub" x="12" y="66">L1/L2/L3/L5 reason & tags</text>
+            </g>
+
+            <!-- Node: Stress Engine Source -->
+            <g id="node-stress-source" class="node-group" transform="translate(60, 380)">
+              <rect class="node-box" width="260" height="80" stroke="#f59e0b" />
+              <rect class="metric-badge" x="12" y="12" width="80" height="16" fill="#f59e0b" />
+              <text class="metric-badge-text" x="52" y="24">BENCHMARK</text>
+              <text class="node-title" x="12" y="48">Generador de Estrés Sintético</text>
+              <text class="node-sub" x="12" y="66">app/services/stress_test.py</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER 2: RECOLECCIÓN EN MEMORIA (ATOMIC DEQUE) -->
+          <g id="cluster-collector">
+            <rect class="telemetry-cluster" x="380" y="40" width="360" height="820" />
+            <text class="cluster-title" x="400" y="70">2. Motor Central de Telemetría en Memoria</text>
+
+            <!-- Node: Metrics Collector Core -->
+            <g id="node-metrics-core" class="node-group" transform="translate(400, 100)">
+              <rect class="node-box" width="320" height="95" stroke="#a855f7" />
+              <rect class="metric-badge" x="14" y="12" width="90" height="16" fill="#a855f7" />
+              <text class="metric-badge-text" x="59" y="24">COLLECTOR</text>
+              <text class="node-title" x="14" y="48">MetricsCollector (Singleton)</text>
+              <text class="node-sub" x="14" y="66">app/services/metrics.py</text>
+              <text class="node-sub" x="14" y="82" fill="#a855f7">Estructura thread-safe de cero bloqueo</text>
+            </g>
+
+            <!-- Node: Circular Deque -->
+            <g id="node-circular-deque" class="node-group" transform="translate(400, 240)">
+              <rect class="node-box" width="320" height="85" />
+              <text class="node-title" x="14" y="32">Búfer Circular collections.deque</text>
+              <text class="node-sub" x="14" y="52">maxlen = 1000 elementos</text>
+              <text class="node-sub" x="14" y="70" fill="#38bdf8">Eliminación O(1) automática sin memory leak</text>
+            </g>
+
+            <!-- Node: Aggregator Engine -->
+            <g id="node-aggregator" class="node-group" transform="translate(400, 380)">
+              <rect class="node-box" width="320" height="100" />
+              <text class="node-title" x="14" y="32">Motor de Agregación Rodante</text>
+              <text class="node-sub" x="14" y="52">Percentiles: numpy.percentile(P50, P95, P99)</text>
+              <text class="node-sub" x="14" y="70">Tasa de bloqueo por capa (%)</text>
+              <text class="node-sub" x="14" y="88">Throughput (TPS) en ventana de 60s</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER 3: TRANSPORTE Y ENDPOINTS -->
+          <g id="cluster-transport">
+            <rect class="telemetry-cluster" x="780" y="40" width="320" height="820" />
+            <text class="cluster-title" x="800" y="70">3. Transmisión & Canales de Salida</text>
+
+            <!-- Node: SSE Stream Endpoint -->
+            <g id="node-sse-stream" class="node-group" transform="translate(800, 160)">
+              <rect class="node-box" width="280" height="85" stroke="#10b981" />
+              <rect class="metric-badge" x="14" y="12" width="70" height="16" fill="#10b981" />
+              <text class="metric-badge-text" x="49" y="24">STREAMING</text>
+              <text class="node-title" x="14" y="48">GET /api/v1/metrics/stream</text>
+              <text class="node-sub" x="14" y="68">Server-Sent Events (SSE) push</text>
+            </g>
+
+            <!-- Node: REST Summary Endpoint -->
+            <g id="node-rest-summary" class="node-group" transform="translate(800, 320)">
+              <rect class="node-box" width="280" height="85" stroke="#3b82f6" />
+              <rect class="metric-badge" x="14" y="12" width="55" height="16" fill="#3b82f6" />
+              <text class="metric-badge-text" x="41" y="24">REST API</text>
+              <text class="node-title" x="14" y="48">GET /api/v1/metrics/summary</text>
+              <text class="node-sub" x="14" y="68">JSON snapshot de métricas actuales</text>
+            </g>
+          </g>
+
+          <!-- CLUSTER 4: CONSUMO Y VISUALIZACIÓN HUD -->
+          <g id="cluster-ui">
+            <rect class="telemetry-cluster" x="1140" y="40" width="320" height="820" />
+            <text class="cluster-title" x="1160" y="70">4. Dashboard Telescope HUD</text>
+
+            <!-- Node: Latency Cards -->
+            <g id="node-hud-latency" class="node-group" transform="translate(1160, 120)">
+              <rect class="node-box" width="280" height="80" />
+              <text class="node-title" x="14" y="32">Monitores de Latencia (P50/P95/P99)</text>
+              <text class="node-sub" x="14" y="52">Mediana general y picos anómalos</text>
+            </g>
+
+            <!-- Node: Threat Distribution -->
+            <g id="node-hud-threats" class="node-group" transform="translate(1160, 240)">
+              <rect class="node-box" width="280" height="80" />
+              <text class="node-title" x="14" y="32">Distribución de Ataques por Capa</text>
+              <text class="node-sub" x="14" y="52">Barras porcentuales L1, L2, L3 y L5</text>
+            </g>
+
+            <!-- Node: Live Audit Log -->
+            <g id="node-hud-log" class="node-group" transform="translate(1160, 360)">
+              <rect class="node-box" width="280" height="80" />
+              <text class="node-title" x="14" y="32">Feed de Auditoría en Tiempo Real</text>
+              <text class="node-sub" x="14" y="52">Consola interactiva de eventos de red</text>
+            </g>
+
+            <!-- Node: Stress Controller UI -->
+            <g id="node-hud-stress" class="node-group" transform="translate(1160, 480)">
+              <rect class="node-box" width="280" height="80" stroke="#f59e0b" />
+              <text class="node-title" x="14" y="32">Panel de Control de Estrés</text>
+              <text class="node-sub" x="14" y="52">Disparo de pruebas de concurrencia</text>
+            </g>
+          </g>
+
+          <!-- EDGES & FLOWS -->
+          <g id="telemetry-edges">
+            <!-- Interceptor -> Metrics Core -->
+            <path class="edge-line animated-packet" data-from="node-interceptor" data-to="node-metrics-core" d="M 320 140 L 400 140" marker-end="url(#arrow)" />
+
+            <!-- Security Emitter -> Metrics Core -->
+            <path class="edge-line animated-packet-danger" data-from="node-sec-emitter" data-to="node-metrics-core" d="M 320 280 Q 360 280 360 160 L 400 160" marker-end="url(#arrow)" />
+
+            <!-- Stress Source -> Metrics Core -->
+            <path class="edge-line animated-packet" data-from="node-stress-source" data-to="node-metrics-core" d="M 320 420 Q 360 420 360 180 L 400 180" marker-end="url(#arrow)" />
+
+            <!-- Metrics Core -> Circular Deque -->
+            <path class="edge-line animated-packet" data-from="node-metrics-core" data-to="node-circular-deque" d="M 560 195 L 560 240" marker-end="url(#arrow-purple)" />
+
+            <!-- Circular Deque -> Aggregator -->
+            <path class="edge-line animated-packet" data-from="node-circular-deque" data-to="node-aggregator" d="M 560 325 L 560 380" marker-end="url(#arrow-purple)" />
+
+            <!-- Aggregator -> SSE Stream -->
+            <path class="edge-line animated-packet" data-from="node-aggregator" data-to="node-sse-stream" d="M 720 430 Q 750 430 750 202 L 800 202" marker-end="url(#arrow)" />
+
+            <!-- Aggregator -> REST Summary -->
+            <path class="edge-line animated-packet" data-from="node-aggregator" data-to="node-rest-summary" d="M 720 440 Q 760 440 760 362 L 800 362" marker-end="url(#arrow)" />
+
+            <!-- SSE Stream -> HUD Components -->
+            <path class="edge-line animated-packet" data-from="node-sse-stream" data-to="node-hud-latency" d="M 1080 202 L 1160 160" marker-end="url(#arrow)" />
+            <path class="edge-line animated-packet" data-from="node-sse-stream" data-to="node-hud-threats" d="M 1080 202 L 1160 280" marker-end="url(#arrow)" />
+            <path class="edge-line animated-packet" data-from="node-sse-stream" data-to="node-hud-log" d="M 1080 202 L 1160 400" marker-end="url(#arrow)" />
+
+            <!-- HUD Stress Controller -> Stress Source -->
+            <path class="edge-line" data-from="node-hud-stress" data-to="node-stress-source" d="M 1160 520 Q 900 680 320 440" marker-end="url(#arrow-amber)" stroke="#f59e0b" stroke-dasharray="4, 4" />
+          </g>
+        </g>
+      </svg>
+
+      <div class="archify-hud">
+        <button id="btn-zoom-in" class="hud-btn">+</button>
+        <button id="btn-zoom-out" class="hud-btn">−</button>
+        <button id="btn-reset" class="hud-btn">⟲</button>
+      </div>
+    </div>
+
+    <aside id="archify-drawer" class="archify-drawer">
+      <div class="drawer-header">
+        <h3 id="drawer-node-title" class="drawer-title">Detalle de Telemetría</h3>
+        <button id="drawer-close" class="drawer-close">✕</button>
+      </div>
+      <div id="drawer-node-body" class="drawer-content"></div>
+    </aside>
+  </main>
+
+  <script src="archify.js"></script>
+  <script>
+    const metadataStore = {
+      'node-interceptor': {
+        title: 'Intercepción de Latencia por Capa',
+        file: 'app/core/pipeline.py',
+        description: 'Mide la duración exacta de cada fase (L1, L2, L3, L4, Inferencia LLM, L5) mediante marcas de tiempo de alta precisión de microsegundos.',
+        latency: 'Overhead: < 0.001 ms'
+      },
+      'node-sec-emitter': {
+        title: 'Emisor de Eventos de Seguridad',
+        file: 'app/api/v1/chat.py',
+        description: 'Cuando una petición es bloqueada o clasificada como amenaza, emite inmediatamente el payload estructurado con el nombre de la capa bloqueante, código de motivo y huella del prompt.',
+        failureMode: 'Despacho síncrono no bloqueante en memoria.'
+      },
+      'node-stress-source': {
+        title: 'Generador de Estrés Sintético',
+        file: 'app/services/stress_test.py',
+        description: 'Módulo de testing concurrente que dispara peticiones masivas mediante asyncio y httpx para evaluar la degradación del percentil P99 bajo saturación.',
+        io: 'Entrada: Rounds, Concurrency, AttackRatio -> Salida: Throughput y reporte de degradación'
+      },
+      'node-metrics-core': {
+        title: 'MetricsCollector (Singleton)',
+        file: 'app/services/metrics.py',
+        description: 'Clase central de telemetría instanciada como singleton en la aplicación. Mantiene las colas circulares y proporciona métodos thread-safe para registro y cálculo.',
+        latency: '< 0.05 ms por llamada'
+      },
+      'node-circular-deque': {
+        title: 'Búfer Circular collections.deque',
+        file: 'app/services/metrics.py',
+        description: 'Estructura FIFO de tamaño acotado (maxlen=1000). Al recibir una nueva medición, si el búfer está lleno, expulsa el elemento más antiguo con complejidad O(1), impidiendo que la memoria del servidor crezca indefinidamente.',
+        io: 'Capacidad máxima fija de 1000 muestras rodantes'
+      },
+      'node-aggregator': {
+        title: 'Motor de Agregación Rodante',
+        file: 'app/services/metrics.py',
+        description: 'Calcula sobre la marcha las métricas estadísticas sin consultar discos ni bases de datos: percentil P50 (comportamiento típico), P95 (cola superior de lentitud) y P99 (peor caso).',
+        latency: '< 0.5 ms cómputo'
+      },
+      'node-sse-stream': {
+        title: 'Canal SSE (/api/v1/metrics/stream)',
+        file: 'app/api/v1/metrics.py',
+        description: 'Canal unidireccional HTTP con Content-Type: text/event-stream. Envía actualizaciones continuas a los dashboards conectados sin sobrecarga de handshake.',
+        io: 'Streaming continuo de eventos JSON cada 1000ms'
+      },
+      'node-rest-summary': {
+        title: 'Endpoint REST (/api/v1/metrics/summary)',
+        file: 'app/api/v1/metrics.py',
+        description: 'Endpoint ligero para consultas puntuales de salud, dashboards externos o chequeos de orquestadores (K8s / Docker).',
+        latency: '< 2 ms tiempo de respuesta'
+      },
+      'node-hud-latency': {
+        title: 'Tarjetas de Percentiles (Telescope UI)',
+        file: 'frontend/telescope/js/telescope.js',
+        description: 'Muestra visualmente la latencia media, P95 y P99 en milisegundos con indicadores de semáforo (Verde < 300ms, Amarillo < 700ms, Rojo > 1000ms).'
+      },
+      'node-hud-threats': {
+        title: 'Distribución de Ataques por Capa',
+        file: 'frontend/telescope/js/telescope.js',
+        description: 'Gráfico interactivo que desglosa el porcentaje de ataques neutralizados por cada línea de defensa: L1 (Heurística), L2 (Vectorial), L3 (Razonamiento) o L5 (Egreso).'
+      },
+      'node-hud-log': {
+        title: 'Consola de Auditoría en Vivo',
+        file: 'frontend/telescope/js/telescope.js',
+        description: 'Muestra los últimos eventos registrados con badges de estado (BLOCKED, PASSED, CANARY_LEAK) y botón de inspección detallada de payload.'
+      },
+      'node-hud-stress': {
+        title: 'Consola de Pruebas de Estrés',
+        file: 'frontend/telescope/js/telescope.js',
+        description: 'Permite al usuario o evaluador lanzar una batería de pruebas de carga controlada y observar cómo reaccionan las gráficas de latencia P95 y P99 en vivo.'
+      }
+    };
+
+    new ArchifyViewer({
+      metadataStore: metadataStore
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Gateway - Explorador de Arquitectura y Mapas Técnicos</title>
+  <link rel="stylesheet" href="archify.css">
+  <style>
+    .hub-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      background-color: var(--bg-primary);
+    }
+    .hub-header {
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .hub-logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .hub-badge {
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .hub-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .hub-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .hub-tabs {
+      display: flex;
+      gap: 6px;
+      background-color: var(--bg-primary);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+    }
+    .hub-tab {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+    .hub-tab:hover {
+      color: var(--text-primary);
+      background-color: var(--bg-card-hover);
+    }
+    .hub-tab.active {
+      background-color: var(--accent-cyan);
+      color: #0e1117;
+      font-weight: 700;
+    }
+    .hub-viewport {
+      flex: 1;
+      position: relative;
+      background-color: var(--bg-primary);
+    }
+    iframe.diagram-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    .hub-meta-bar {
+      height: 38px;
+      background-color: var(--bg-secondary);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+    .meta-link {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+    .meta-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="hub-container">
+    <!-- Top Navigation Bar -->
+    <header class="hub-header">
+      <div class="hub-logo">
+        <span class="hub-badge">AI GATEWAY</span>
+        <div>
+          <h1 class="hub-title">AI Gateway Perimetral - Explorador de Arquitectura</h1>
+          <p class="hub-desc">Suite de Diagramas Técnicos Interactivos para Tesis y Documentación de Software</p>
+        </div>
+      </div>
+
+      <!-- Diagram Selector Tabs -->
+      <nav class="hub-tabs">
+        <button class="hub-tab active" onclick="loadDiagram('01_componentes.html', this)">
+          <span>01. Componentes Clean Arch</span>
+        </button>
+        <button class="hub-tab" onclick="loadDiagram('02_flujo_pipeline.html', this)">
+          <span>02. Flujo de Datos 5 Capas</span>
+        </button>
+        <button class="hub-tab" onclick="loadDiagram('03_secuencia_peticion.html', this)">
+          <span>03. Secuencia Temporal</span>
+        </button>
+        <button class="hub-tab" onclick="loadDiagram('04_maquina_estados.html', this)">
+          <span>04. Máquina de Estados</span>
+        </button>
+        <button class="hub-tab" onclick="loadDiagram('05_telescope_observabilidad.html', this)">
+          <span>05. Telescope & Telemetría</span>
+        </button>
+        <button class="hub-tab" onclick="loadDiagram('06_diseno_sistema.html', this)">
+          <span>06. Diseño del Sistema</span>
+        </button>
+        <button class="hub-tab" onclick="loadDiagram('07_escalabilidad_alta_disponibilidad.html', this)">
+          <span>07. Escalabilidad & HA</span>
+        </button>
+      </nav>
+
+      <!-- Global Actions -->
+      <div class="archify-controls">
+        <button id="hub-fullscreen-btn" class="archify-btn" onclick="toggleFullScreen()">Pantalla Completa</button>
+        <button id="theme-toggle" class="archify-btn">Modo Claro</button>
+      </div>
+    </header>
+
+    <!-- Embedded Canvas Viewport -->
+    <main class="hub-viewport">
+      <iframe id="diagram-frame" class="diagram-frame" src="01_componentes.html" title="Diagrama de Arquitectura"></iframe>
+    </main>
+
+    <!-- Footer / Status & Documentation Links -->
+    <footer class="hub-meta-bar">
+      <div>
+        <span>AI Gateway Perimetral Multi-Capa con Canarios Criptográficos y Telemetría</span>
+        <span style="margin: 0 8px;">•</span>
+        <span>Branch: <strong style="color: var(--accent-emerald);">version1</strong></span>
+      </div>
+      <div>
+        <span>Acceso a Docs: </span>
+        <a href="/marco_teorico_metodologico_tesis.md" target="_blank" class="meta-link">Marco Teórico Tesis</a> |
+        <a href="/especificacion_tecnica.md" target="_blank" class="meta-link">Especificación Técnica</a> |
+        <a href="/README_es.md" target="_blank" class="meta-link">README</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    function loadDiagram(url, buttonEl) {
+      document.querySelectorAll('.hub-tab').forEach(t => t.classList.remove('active'));
+      if (buttonEl) buttonEl.classList.add('active');
+      const frame = document.getElementById('diagram-frame');
+      if (frame) {
+        frame.src = url;
+      }
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    }
+
+    // Synchronize theme between Hub and iframe
+    function initHubTheme() {
+      const savedTheme = localStorage.getItem('archify_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      const themeBtn = document.getElementById('theme-toggle');
+      if (themeBtn) {
+        themeBtn.textContent = savedTheme === 'dark' ? 'Modo Claro' : 'Modo Oscuro';
+        themeBtn.addEventListener('click', () => {
+          const current = document.documentElement.getAttribute('data-theme');
+          const next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          localStorage.setItem('archify_theme', next);
+          themeBtn.textContent = next === 'dark' ? 'Modo Claro' : 'Modo Oscuro';
+          
+          // Relay theme to active iframe
+          const frame = document.getElementById('diagram-frame');
+          if (frame && frame.contentWindow && frame.contentWindow.document) {
+            frame.contentWindow.document.documentElement.setAttribute('data-theme', next);
+            const subBtn = frame.contentWindow.document.getElementById('theme-toggle');
+            if (subBtn) subBtn.textContent = next === 'dark' ? 'Modo Claro' : 'Modo Oscuro';
+          }
+        });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initHubTheme);
+  </script>
+</body>
+</html>
